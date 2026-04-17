@@ -1,0 +1,10 @@
+{
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation",
+    "display-capture"
+  ],
+  "name": " Neural OS Actuator Final",
+  "description": "Complete System-Level Voice Control for Laptop via Gemini Live API"
+}

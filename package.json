@@ -1,0 +1,13 @@
+
+{
+  "name": "neural-os-actuator",
+  "version": "11.0.8",
+  "main": "main.js",
+  "description": "Neural OS Actuator Desktop Environment",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^31.0.0"
+  }
+}
