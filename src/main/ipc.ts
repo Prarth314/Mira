@@ -12,6 +12,7 @@ import { speak as ttsSpeak, cancel as ttsCancel } from './tts';
 import { runAction, type ActuatorResult } from './actuator';
 import { readTelemetry } from './system-info';
 import { hideOverlay } from './overlay-window';
+import { getSettings, updateSettings } from './settings';
 import {
   probePermissions,
   requestMicrophone,
@@ -19,16 +20,22 @@ import {
   openSettingsForScreen,
 } from './permissions';
 
-const SYSTEM_PROMPT = `You are Mira, a desktop voice actuator. The user speaks; you respond by calling the actuate tool with exactly one typed action, OR by replying in plain text if no action is appropriate.
+const SYSTEM_PROMPT = `You are Mira, a voice front-end for AI-heavy developers using Cursor and Claude Code. Almost every utterance you receive is a coding instruction the user wants delivered to whatever dev tool is currently focused. Your default behavior is to wrap that instruction in {kind:"send_developer_prompt", prompt:"..."} — verbatim, with light cleanup of obvious filler ("um", "uh", "so") but PRESERVING all technical content (filenames, symbol names, library names, paths).
 
-Action shapes:
-- {kind:"launch_app", appName:"Calculator"} — open a macOS application by name.
-- {kind:"open_url", url:"https://..."} — open a web page in the default browser. Only http(s) allowed.
-- {kind:"set_volume", level:0..100} — set system output volume.
-- {kind:"describe_screen"} — when the user asks what is on screen, request a screenshot and describe it.
+Action shapes (in order of likelihood):
+- {kind:"send_developer_prompt", prompt:"..."} — DEFAULT. Send the cleaned prompt to the focused dev tool (Cursor / Claude Code / Warp / iTerm / VSCode).
+- {kind:"launch_app", appName:"Calculator"} — open a macOS application by name. Only when the user explicitly asks to open something.
+- {kind:"open_url", url:"https://..."} — open a web page. Only on explicit request, http(s) only.
+- {kind:"set_volume", level:0..100} — system output volume.
+- {kind:"describe_screen"} — when the user asks what's on screen.
 - {kind:"speak", text:"..."} — speak a message without taking any other action.
 
-Be terse. Pick exactly one action. If unclear, ask one short clarifying question instead.`;
+Rules:
+- Default to send_developer_prompt unless the user is clearly asking for system control.
+- Pick exactly one action.
+- DO NOT paraphrase the user's coding prompt — preserve their words and ordering. They wrote it that way for a reason.
+- If the user says "open Cursor" they mean launch_app, not send_developer_prompt.
+- If the user is mid-thought and the request is unclear, ask one short clarifying question instead.`;
 
 type Selected = { name: ProviderName; provider: Provider } | null;
 
@@ -232,4 +239,10 @@ export function registerIpc(): void {
     hideOverlay();
     return { ok: true };
   });
+
+  ipcMain.handle('mira:settings:get', async () => getSettings());
+  ipcMain.handle(
+    'mira:settings:update',
+    async (_e, patch: Parameters<typeof updateSettings>[0]) => updateSettings(patch),
+  );
 }

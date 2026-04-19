@@ -225,11 +225,17 @@ function renderSummary(
   const succeeded = actions.filter((a) => a.action && a.actuator?.ok);
   const failed = actions.filter((a) => !a.action || a.actuator?.ok === false);
   if (succeeded.length === 1 && failed.length === 0) {
-    return text ?? succeeded[0].actuator?.ok ? (succeeded[0].actuator as { ok: true; message: string }).message : 'done';
+    const actuator = succeeded[0].actuator;
+    if (actuator?.ok) return actuator.message;
+    return text ?? 'done';
   }
   if (text) return text;
   if (succeeded.length) return `${succeeded.length} action(s) executed`;
-  if (failed.length) return `failed: ${failed[0].actuator && !failed[0].actuator.ok ? failed[0].actuator.error.message : failed[0].error}`;
+  if (failed.length) {
+    const f = failed[0];
+    if (f.actuator && !f.actuator.ok) return `failed: ${f.actuator.error.message}`;
+    return `failed: ${f.error ?? 'unknown'}`;
+  }
   return 'no action';
 }
 

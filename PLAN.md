@@ -1,8 +1,10 @@
-# Mira — Provider-Agnostic Voice Actuator
+# Mira — Voice for Cursor & Claude Code (Wedge Pivot 2026-04-18)
+
+> **NOTE — scope change.** The original plan was a general voice-controlled OS actuator with five typed actions. After /office-hours + codex landscape research (Wispr's "Master Plan" March 2026 + ChatGPT macOS voice retired Jan 2026 + Apple Voice Control rarely used in practice), the wedge collapsed to **voice-to-dev-tool prompt routing** for AI-heavy developers. The infrastructure stays; the product framing changes. Original sections below are preserved with updates inline. Full diagnostic and recommended approach lives at `~/.gstack/projects/Prarth314-Mira/eshwarankrishnan-feat-multi-provider-voice-design-20260418-214224.md`.
 
 ## Goal
 
-Turn the Google-AI-Studio export into a working, provider-flexible voice-controlled desktop actuator. Customers choose Anthropic or OpenAI; voice runs on-device.
+Voice front-end for AI-heavy developers using Cursor, Claude Code, Warp, iTerm, Terminal, and VSCode. Press ⌥Space anywhere on macOS, speak a coding instruction, the cleaned-up text lands in the focused dev tool's prompt input — optionally auto-sent. Provider-agnostic infrastructure (Anthropic + OpenAI) but Anthropic Claude is the v0.1 default, OpenAI hidden behind "advanced".
 
 ## Scope (v0.1)
 

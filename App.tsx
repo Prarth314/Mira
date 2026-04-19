@@ -10,7 +10,7 @@ import { usePermissions } from './hooks/usePermissions';
 import type { CommandLog } from './types';
 
 const STATE_LABELS: Record<string, string> = {
-  idle: 'Hold ⌥Space anywhere to talk',
+  idle: 'Press ⌥Space anywhere — voice for Cursor & Claude Code',
   recording: 'Listening…',
   thinking: 'Thinking…',
   speaking: 'Speaking…',
@@ -125,7 +125,7 @@ const App: React.FC = () => {
               disabled={state !== 'idle'}
               placeholder={
                 state === 'idle'
-                  ? 'Type a command, or hold ⌥Space anywhere'
+                  ? 'Type a prompt for Cursor / Claude Code, or press ⌥Space'
                   : STATE_LABELS[state]
               }
               className="flex-1 bg-transparent text-[13px] text-zinc-100 placeholder-zinc-600 focus:outline-none px-2 py-1.5"

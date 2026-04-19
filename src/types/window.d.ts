@@ -96,6 +96,22 @@ declare global {
         onHide: (cb: () => void) => () => void;
         onToggle: (cb: () => void) => () => void;
       };
+      settings: {
+        get: () => Promise<{
+          defaultProvider: ProviderName;
+          autoSend: boolean;
+          showAdvancedProviders: boolean;
+        }>;
+        update: (patch: Partial<{
+          defaultProvider: ProviderName;
+          autoSend: boolean;
+          showAdvancedProviders: boolean;
+        }>) => Promise<{
+          defaultProvider: ProviderName;
+          autoSend: boolean;
+          showAdvancedProviders: boolean;
+        }>;
+      };
     };
   }
 }

@@ -1,6 +1,7 @@
 import { MiraError } from './MiraError';
 
 export type Action =
+  | { kind: 'send_developer_prompt'; prompt: string; autoSend?: boolean }
   | { kind: 'launch_app'; appName: string }
   | { kind: 'open_url'; url: string }
   | { kind: 'set_volume'; level: number }
@@ -11,6 +12,7 @@ export type ActionKind = Action['kind'];
 
 const APP_NAME_PATTERN = /^[A-Za-z0-9 .\-_]{1,64}$/;
 const ALLOWED_URL_PROTOCOLS = new Set(['http:', 'https:']);
+const MAX_DEV_PROMPT_LEN = 4000;
 
 export function parseAction(raw: unknown): Action {
   if (!raw || typeof raw !== 'object') {
@@ -20,6 +22,22 @@ export function parseAction(raw: unknown): Action {
   const kind = r.kind;
 
   switch (kind) {
+    case 'send_developer_prompt': {
+      const prompt = String(r.prompt ?? '').trim();
+      if (!prompt) {
+        throw new MiraError('action_invalid', 'send_developer_prompt prompt must be non-empty');
+      }
+      if (prompt.length > MAX_DEV_PROMPT_LEN) {
+        throw new MiraError(
+          'action_invalid',
+          `send_developer_prompt prompt exceeds max length (${MAX_DEV_PROMPT_LEN})`,
+        );
+      }
+      const autoSend = typeof r.autoSend === 'boolean' ? r.autoSend : undefined;
+      return autoSend === undefined
+        ? { kind: 'send_developer_prompt', prompt }
+        : { kind: 'send_developer_prompt', prompt, autoSend };
+    }
     case 'launch_app': {
       const appName = String(r.appName ?? '');
       if (!APP_NAME_PATTERN.test(appName)) {

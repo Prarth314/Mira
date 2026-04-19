@@ -94,4 +94,31 @@ describe('parseAction', () => {
   it('rejects missing kind', () => {
     expect(() => parseAction({ appName: 'Calculator' })).toThrow(/unknown action kind/);
   });
+
+  it('parses send_developer_prompt with prompt only', () => {
+    expect(parseAction({ kind: 'send_developer_prompt', prompt: 'fix the auth bug' })).toEqual({
+      kind: 'send_developer_prompt',
+      prompt: 'fix the auth bug',
+    });
+  });
+
+  it('parses send_developer_prompt with autoSend', () => {
+    expect(
+      parseAction({ kind: 'send_developer_prompt', prompt: 'fix it', autoSend: true }),
+    ).toEqual({ kind: 'send_developer_prompt', prompt: 'fix it', autoSend: true });
+  });
+
+  it('rejects empty send_developer_prompt prompt', () => {
+    expect(() => parseAction({ kind: 'send_developer_prompt', prompt: '' })).toThrow(/non-empty/);
+    expect(() => parseAction({ kind: 'send_developer_prompt', prompt: '   ' })).toThrow(
+      /non-empty/,
+    );
+  });
+
+  it('rejects send_developer_prompt over max length', () => {
+    const huge = 'x'.repeat(5000);
+    expect(() => parseAction({ kind: 'send_developer_prompt', prompt: huge })).toThrow(
+      /max length/,
+    );
+  });
 });

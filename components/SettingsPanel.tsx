@@ -9,6 +9,8 @@ type Props = {
 const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
   const [keyStatus, setKeyStatus] = useState<Record<ProviderName, boolean> | null>(null);
   const [provider, setProvider] = useState<ProviderName>('anthropic');
+  const [autoSend, setAutoSend] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [anthropicKey, setAnthropicKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
   const [busy, setBusy] = useState(false);
@@ -18,6 +20,10 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
     if (!open || !window.mira) return;
     void window.mira.keys.status().then(setKeyStatus);
     void window.mira.provider.get().then(({ name }) => setProvider(name));
+    void window.mira.settings.get().then((s) => {
+      setAutoSend(s.autoSend);
+      setShowAdvanced(s.showAdvancedProviders);
+    });
   }, [open]);
 
   if (!open) return null;
@@ -30,6 +36,11 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
       if (anthropicKey.trim()) await window.mira.keys.save('anthropic', anthropicKey.trim());
       if (openaiKey.trim()) await window.mira.keys.save('openai', openaiKey.trim());
       await window.mira.provider.set(provider);
+      await window.mira.settings.update({
+        defaultProvider: provider,
+        autoSend,
+        showAdvancedProviders: showAdvanced,
+      });
       const status = await window.mira.keys.status();
       setKeyStatus(status);
       setAnthropicKey('');
@@ -66,47 +77,72 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
           </button>
         </div>
 
-        <Field label="Active provider">
-          <div className="grid grid-cols-2 gap-2">
-            {(['anthropic', 'openai'] as ProviderName[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => switchProvider(p)}
-                className={`px-3 py-2 rounded-lg text-xs font-medium transition ${
-                  provider === p
-                    ? 'bg-blue-500/15 border border-blue-400/40 text-blue-200'
-                    : 'bg-zinc-950/40 border border-white/5 text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                {p === 'anthropic' ? 'Claude (Anthropic)' : 'GPT (OpenAI)'}
-                {keyStatus?.[p] ? ' • set' : ''}
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-zinc-500 mt-2">
-            Switching providers clears the current chat history.
-          </p>
+        <Field label="Auto-send to dev tool">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoSend}
+              onChange={(e) => setAutoSend(e.target.checked)}
+              className="accent-blue-400"
+            />
+            <span className="text-[12px] text-zinc-300">
+              Press Return after pasting (otherwise just paste, you press Return)
+            </span>
+          </label>
         </Field>
 
-        <Field label={`Anthropic API key${keyStatus?.anthropic ? ' (saved)' : ''}`}>
+        <Field label="Anthropic API key (Claude — recommended for code)">
           <input
             type="password"
             value={anthropicKey}
             onChange={(e) => setAnthropicKey(e.target.value)}
-            placeholder="sk-ant-..."
+            placeholder={keyStatus?.anthropic ? 'saved (paste to replace)' : 'sk-ant-...'}
             className="w-full bg-zinc-950/60 border border-white/10 rounded-lg px-3 py-2 text-[13px] font-mono text-zinc-200 focus:border-blue-400/40 focus:outline-none"
           />
         </Field>
 
-        <Field label={`OpenAI API key${keyStatus?.openai ? ' (saved)' : ''}`}>
-          <input
-            type="password"
-            value={openaiKey}
-            onChange={(e) => setOpenaiKey(e.target.value)}
-            placeholder="sk-..."
-            className="w-full bg-zinc-950/60 border border-white/10 rounded-lg px-3 py-2 text-[13px] font-mono text-zinc-200 focus:border-blue-400/40 focus:outline-none"
-          />
-        </Field>
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="text-[11px] text-zinc-500 hover:text-zinc-300"
+        >
+          {showAdvanced ? '▾ Advanced' : '▸ Advanced'}
+        </button>
+
+        {showAdvanced && (
+          <div className="space-y-4 border-l border-white/5 pl-4">
+            <Field label="Active provider">
+              <div className="grid grid-cols-2 gap-2">
+                {(['anthropic', 'openai'] as ProviderName[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => switchProvider(p)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition ${
+                      provider === p
+                        ? 'bg-blue-500/15 border border-blue-400/40 text-blue-200'
+                        : 'bg-zinc-950/40 border border-white/5 text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    {p === 'anthropic' ? 'Claude (Anthropic)' : 'GPT (OpenAI)'}
+                    {keyStatus?.[p] ? ' • set' : ''}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-zinc-500 mt-2">
+                Switching providers clears the current chat history.
+              </p>
+            </Field>
+
+            <Field label={`OpenAI API key${keyStatus?.openai ? ' (saved)' : ''}`}>
+              <input
+                type="password"
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+                placeholder="sk-..."
+                className="w-full bg-zinc-950/60 border border-white/10 rounded-lg px-3 py-2 text-[13px] font-mono text-zinc-200 focus:border-blue-400/40 focus:outline-none"
+              />
+            </Field>
+          </div>
+        )}
 
         {msg && <div className="text-xs text-blue-300">{msg}</div>}
 
@@ -119,7 +155,7 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
         </button>
 
         <p className="text-[11px] text-zinc-500 text-center">
-          Keys are encrypted at rest in your OS keychain.
+          Keys encrypted at rest in your OS keychain. Mira works with Cursor, Claude Code, Warp, iTerm, Terminal, and VSCode.
         </p>
       </div>
     </div>

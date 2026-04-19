@@ -57,4 +57,8 @@ contextBridge.exposeInMainWorld('mira', {
     onHide: (cb) => on('mira:overlay:hide', cb),
     onToggle: (cb) => on('mira:overlay:toggle', cb),
   },
+  settings: {
+    get: () => ipcRenderer.invoke('mira:settings:get'),
+    update: (patch) => ipcRenderer.invoke('mira:settings:update', patch),
+  },
 });

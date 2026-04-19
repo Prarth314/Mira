@@ -2,12 +2,26 @@ import { spawn } from 'node:child_process';
 import type { Action } from '../types/actions';
 import { MiraError } from '../types/MiraError';
 import { speak } from './tts';
+import { routeDevPrompt } from './dev-tool-router';
+import { cleanPrompt } from './prompt-cleanup';
+import { getSettings } from './settings';
 
 export type ActuatorResult = { ok: true; message: string } | { ok: false; error: { kind: string; message: string } };
 
 export async function runAction(action: Action): Promise<ActuatorResult> {
   try {
     switch (action.kind) {
+      case 'send_developer_prompt': {
+        const settings = await getSettings();
+        const cleaned = cleanPrompt(action.prompt);
+        const autoSend = action.autoSend ?? settings.autoSend;
+        const result = await routeDevPrompt(cleaned, { autoSend });
+        const verb = result.autoSent ? 'sent' : 'pasted';
+        return {
+          ok: true,
+          message: `${verb} into ${result.appName} (${result.target})`,
+        };
+      }
       case 'launch_app': {
         await execProcess('open', ['-a', action.appName]);
         return { ok: true, message: `launched ${action.appName}` };

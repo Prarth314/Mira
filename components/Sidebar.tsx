@@ -27,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ logs, telemetry }) => {
         </div>
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5 text-[12px] leading-snug">
           {logs.length === 0 ? (
-            <div className="text-zinc-600 italic">No activity yet. Hold ⌥Space anywhere to talk, or type a command.</div>
+            <div className="text-zinc-600 italic">No activity yet. Open Cursor or Claude Code, then press ⌥Space and speak your prompt.</div>
           ) : (
             logs.map((log, i) => {
               const tone =

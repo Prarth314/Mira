@@ -213,6 +213,8 @@ function renderActionMessage(
 
 function describe(a: Action): string {
   switch (a.kind) {
+    case 'send_developer_prompt':
+      return `→ dev tool: ${a.prompt.slice(0, 80)}${a.prompt.length > 80 ? '…' : ''}`;
     case 'launch_app':
       return `launch app: ${a.appName}`;
     case 'open_url':
