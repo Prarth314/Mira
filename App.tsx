@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, KeyboardEvent } from 'react';
-import { motion } from 'framer-motion';
-import { ShieldCheck, Settings, Mic, Send } from 'lucide-react';
+import { Settings, Mic, Send, Trash2 } from 'lucide-react';
 import AudioVisualizer from './components/AudioVisualizer';
 import Sidebar from './components/Sidebar';
 import SettingsPanel from './components/SettingsPanel';
@@ -10,73 +9,25 @@ import { useTelemetry } from './hooks/useTelemetry';
 import { usePermissions } from './hooks/usePermissions';
 import type { CommandLog } from './types';
 
-const BOOT_STEPS = [
-  'MOUNTING ROOT_FS...',
-  'SYNCING IPC BRIDGE...',
-  'PROVIDER REGISTRY ONLINE...',
-  'WHISPER MODEL READY.',
-  'ACTUATOR_READY.',
-];
+const STATE_LABELS: Record<string, string> = {
+  idle: 'Hold ⌥Space anywhere to talk',
+  recording: 'Listening…',
+  thinking: 'Thinking…',
+  speaking: 'Speaking…',
+};
 
 const App: React.FC = () => {
-  const [isBooting, setIsBooting] = useState(true);
-  const [bootLogs, setBootLogs] = useState<string[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [draft, setDraft] = useState('');
-  const [holdingSpace, setHoldingSpace] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { messages, state, analyser, sendText, startRecording, stopAndSubmit } = useVoiceLoop();
+  const { messages, state, analyser, sendText, reset } = useVoiceLoop();
   const telemetry = useTelemetry(2500);
   const { report: perms, requestMic, openSettings } = usePermissions();
 
   useEffect(() => {
-    let step = 0;
-    const interval = setInterval(() => {
-      if (step < BOOT_STEPS.length) {
-        setBootLogs((prev) => [...prev, BOOT_STEPS[step]]);
-        step++;
-      } else {
-        clearInterval(interval);
-        setTimeout(() => setIsBooting(false), 600);
-      }
-    }, 220);
-    return () => clearInterval(interval);
+    inputRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    if (!isBooting) inputRef.current?.focus();
-  }, [isBooting]);
-
-  // Press-and-hold Space for push-to-talk. Don't trigger when typing in input.
-  useEffect(() => {
-    const isTypingTarget = (t: EventTarget | null) =>
-      t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA');
-
-    const onDown = (e: globalThis.KeyboardEvent) => {
-      if (e.code !== 'Space' || isTypingTarget(e.target)) return;
-      if (e.repeat) return;
-      e.preventDefault();
-      if (state === 'idle') {
-        setHoldingSpace(true);
-        void startRecording();
-      }
-    };
-    const onUp = (e: globalThis.KeyboardEvent) => {
-      if (e.code !== 'Space' || isTypingTarget(e.target)) return;
-      e.preventDefault();
-      if (holdingSpace) {
-        setHoldingSpace(false);
-        void stopAndSubmit();
-      }
-    };
-    window.addEventListener('keydown', onDown);
-    window.addEventListener('keyup', onUp);
-    return () => {
-      window.removeEventListener('keydown', onDown);
-      window.removeEventListener('keyup', onUp);
-    };
-  }, [state, holdingSpace, startRecording, stopAndSubmit]);
 
   const logs: CommandLog[] = messages.map((m) => ({
     timestamp: new Date(),
@@ -89,11 +40,11 @@ const App: React.FC = () => {
     } as const)[m.type],
     message:
       m.type === 'user'
-        ? `▸ ${m.text}`
+        ? m.text
         : m.type === 'action'
         ? m.text
         : m.type === 'error'
-        ? `✕ ${m.text}`
+        ? `Error: ${m.text}`
         : m.text,
   }));
 
@@ -106,132 +57,65 @@ const App: React.FC = () => {
     }
   }
 
-  if (isBooting) {
-    return (
-      <div className="h-screen w-full bg-[#020617] flex items-center justify-center p-20 font-mono text-cyan-500 overflow-hidden relative">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="w-full max-w-md space-y-12 relative z-10"
-        >
-          <div className="flex flex-col items-center space-y-6">
-            <div className="p-6 bg-cyan-500/10 rounded-[2.5rem] ring-1 ring-cyan-500/30 shadow-[0_0_40px_rgba(34,211,238,0.2)]">
-              <ShieldCheck size={64} className="text-cyan-400 animate-pulse" />
-            </div>
-            <motion.div
-              animate={{ letterSpacing: ['0.4em', '1.2em', '0.4em'], opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="text-[16px] font-black uppercase text-cyan-400/90"
-            >
-              Mira
-            </motion.div>
-          </div>
-          <div className="h-1.5 w-full bg-slate-900/50 overflow-hidden rounded-full border border-white/5">
-            <motion.div
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              className="h-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent w-2/3"
-            />
-          </div>
-          <div className="space-y-1 text-[10px] tracking-[0.3em] text-center uppercase opacity-50">
-            {bootLogs.map((s, i) => (
-              <div key={i}>{s}</div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  const stateLabel =
-    state === 'recording'
-      ? 'LISTENING'
-      : state === 'thinking'
-      ? 'THINKING'
-      : state === 'speaking'
-      ? 'SPEAKING'
-      : 'IDLE — HOLD SPACE TO TALK';
-
   return (
-    <div className="flex h-screen w-full bg-[#020617] font-sans text-slate-200 overflow-hidden relative">
+    <div className="flex h-screen w-full bg-zinc-950 text-zinc-200 overflow-hidden">
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
-      <header className="absolute top-0 left-0 w-full h-20 z-[100] flex justify-between items-center px-10 draggable bg-slate-900/40 backdrop-blur-2xl border-b border-white/5">
-        <div className="flex items-center space-x-6 non-draggable">
-          <div className="bg-cyan-500/10 p-3 rounded-2xl border border-cyan-500/30">
-            <ShieldCheck size={20} className="text-cyan-400" />
-          </div>
-          <div className="flex flex-col -space-y-1">
-            <span className="text-[12px] font-black tracking-[0.5em] uppercase text-slate-200">Mira</span>
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-              v0.1 dev — {stateLabel}
-            </span>
-          </div>
+      <header className="absolute top-0 left-0 w-full h-11 z-40 flex justify-between items-center px-4 draggable bg-zinc-950/80 border-b border-white/5">
+        <div className="flex items-center gap-3 non-draggable pl-16">
+          <span className="text-[13px] font-semibold text-zinc-100">Mira</span>
+          <span className="text-[11px] text-zinc-500">{STATE_LABELS[state]}</span>
         </div>
-        <div className="flex items-center space-x-3 non-draggable">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.92 }}
+        <div className="flex items-center gap-1 non-draggable">
+          <button
+            onClick={reset}
+            className="text-zinc-500 hover:text-zinc-200 transition p-1.5 rounded-md hover:bg-white/5"
+            aria-label="Clear conversation"
+            title="Clear conversation"
+          >
+            <Trash2 size={14} />
+          </button>
+          <button
             onClick={() => setSettingsOpen(true)}
-            className="text-slate-500 hover:text-cyan-400 transition-all p-2.5 rounded-xl hover:bg-white/5"
-            aria-label="Open settings"
+            className="text-zinc-500 hover:text-zinc-200 transition p-1.5 rounded-md hover:bg-white/5"
+            aria-label="Settings"
+            title="Settings"
           >
-            <Settings size={18} />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.92 }}
-            onClick={() => window.electronAPI?.minimize()}
-            className="text-slate-500 hover:text-white transition-all p-2.5 rounded-xl hover:bg-white/5"
-            aria-label="Minimize"
-          >
-            <div className="w-4 h-0.5 bg-current rounded-full" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.92 }}
-            onClick={() => window.electronAPI?.close()}
-            className="text-slate-500 hover:text-red-400 transition-all p-2.5 rounded-xl hover:bg-red-500/10"
-            aria-label="Close"
-          >
-            ✕
-          </motion.button>
+            <Settings size={14} />
+          </button>
         </div>
       </header>
 
-      <div className="flex-1 flex gap-8 p-8 pt-28 overflow-hidden relative z-10">
-        <div className="w-[440px] flex flex-col gap-8 h-full overflow-hidden">
-          <Sidebar logs={logs} telemetry={telemetry} />
-        </div>
-
-        <div className="flex-1 flex flex-col gap-6 h-full">
+      <main className="flex-1 grid grid-cols-[1fr_360px] gap-6 p-6 pt-16 overflow-hidden">
+        <section className="flex flex-col gap-4 min-w-0">
           <PermissionsBanner
             report={perms}
             onRequestMic={requestMic}
             onOpenSettings={openSettings}
           />
 
-          <div className="flex-1 flex items-center justify-center">
-            <div className="relative w-[450px] h-[450px]">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 min-h-0">
+            <div className="w-full max-w-md">
               <AudioVisualizer isActive={state === 'recording'} analyser={analyser} />
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <Mic
-                  size={32}
-                  className={
-                    state === 'recording'
-                      ? 'text-cyan-400 animate-pulse'
-                      : state === 'thinking'
-                      ? 'text-amber-400 animate-pulse'
-                      : state === 'speaking'
-                      ? 'text-emerald-400 animate-pulse'
-                      : 'text-slate-700'
-                  }
-                />
-              </div>
+            </div>
+            <div className="flex items-center gap-3 text-zinc-500 text-[12px]">
+              <Mic
+                size={14}
+                className={
+                  state === 'recording'
+                    ? 'text-blue-400'
+                    : state === 'thinking'
+                    ? 'text-amber-400'
+                    : state === 'speaking'
+                    ? 'text-emerald-400'
+                    : 'text-zinc-600'
+                }
+              />
+              <span>{STATE_LABELS[state]}</span>
             </div>
           </div>
 
-          <div className="bg-slate-900/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 flex items-center gap-3">
+          <div className="bg-zinc-900/50 border border-white/5 rounded-xl px-3 py-2 flex items-center gap-2">
             <input
               ref={inputRef}
               type="text"
@@ -240,15 +124,11 @@ const App: React.FC = () => {
               onKeyDown={onKey}
               disabled={state !== 'idle'}
               placeholder={
-                state === 'recording'
-                  ? 'listening...'
-                  : state === 'thinking'
-                  ? 'thinking...'
-                  : state === 'speaking'
-                  ? 'speaking...'
-                  : 'hold Space to talk, or type a command'
+                state === 'idle'
+                  ? 'Type a command, or hold ⌥Space anywhere'
+                  : STATE_LABELS[state]
               }
-              className="flex-1 bg-transparent text-sm font-mono text-slate-200 placeholder-slate-600 focus:outline-none px-3"
+              className="flex-1 bg-transparent text-[13px] text-zinc-100 placeholder-zinc-600 focus:outline-none px-2 py-1.5"
             />
             <button
               onClick={() => {
@@ -257,14 +137,16 @@ const App: React.FC = () => {
                 void sendText(text);
               }}
               disabled={state !== 'idle' || !draft.trim()}
-              className="bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 rounded-xl p-2.5 hover:bg-cyan-500/30 transition disabled:opacity-30"
+              className="text-zinc-400 hover:text-blue-300 disabled:opacity-30 p-1.5 rounded-md hover:bg-white/5"
               aria-label="Send"
             >
-              <Send size={16} />
+              <Send size={14} />
             </button>
           </div>
-        </div>
-      </div>
+        </section>
+
+        <Sidebar logs={logs} telemetry={telemetry} />
+      </main>
     </div>
   );
 };

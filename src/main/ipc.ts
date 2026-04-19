@@ -11,6 +11,7 @@ import { transcribePcm, downloadModel, modelStatus } from './stt';
 import { speak as ttsSpeak, cancel as ttsCancel } from './tts';
 import { runAction, type ActuatorResult } from './actuator';
 import { readTelemetry } from './system-info';
+import { hideOverlay } from './overlay-window';
 import {
   probePermissions,
   requestMicrophone,
@@ -225,5 +226,10 @@ export function registerIpc(): void {
     } catch (err) {
       return { ok: false, error: serializeError(err) };
     }
+  });
+
+  ipcMain.handle('mira:overlay:hide', () => {
+    hideOverlay();
+    return { ok: true };
   });
 }

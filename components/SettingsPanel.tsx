@@ -27,15 +27,14 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
     setBusy(true);
     setMsg(null);
     try {
-      if (anthropicKey.trim())
-        await window.mira.keys.save('anthropic', anthropicKey.trim());
+      if (anthropicKey.trim()) await window.mira.keys.save('anthropic', anthropicKey.trim());
       if (openaiKey.trim()) await window.mira.keys.save('openai', openaiKey.trim());
       await window.mira.provider.set(provider);
       const status = await window.mira.keys.status();
       setKeyStatus(status);
       setAnthropicKey('');
       setOpenaiKey('');
-      setMsg('Saved. Conversation history cleared.');
+      setMsg('Saved. Conversation history was cleared.');
     } catch (e) {
       setMsg(`Error: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -49,85 +48,89 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="glass-panel rounded-3xl p-10 w-[520px] max-w-[90vw] space-y-6">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-zinc-900 border border-white/10 rounded-2xl w-[480px] max-w-[92vw] p-6 space-y-5 shadow-2xl"
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-black uppercase tracking-[0.4em] text-cyan-400">Settings</h2>
+          <h2 className="text-sm font-semibold text-zinc-100">Settings</h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-xs uppercase tracking-widest"
+            className="text-zinc-500 hover:text-zinc-200 text-xs px-2 py-1 rounded"
           >
-            close
+            Close
           </button>
         </div>
 
-        <section className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-            Active provider
-          </label>
-          <div className="flex gap-2">
+        <Field label="Active provider">
+          <div className="grid grid-cols-2 gap-2">
             {(['anthropic', 'openai'] as ProviderName[]).map((p) => (
               <button
                 key={p}
                 onClick={() => switchProvider(p)}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition ${
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition ${
                   provider === p
-                    ? 'bg-cyan-500/20 border border-cyan-400/40 text-cyan-300'
-                    : 'bg-slate-900/40 border border-white/5 text-slate-500 hover:text-slate-300'
+                    ? 'bg-blue-500/15 border border-blue-400/40 text-blue-200'
+                    : 'bg-zinc-950/40 border border-white/5 text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                {p}
-                {keyStatus?.[p] ? ' ✓' : ''}
+                {p === 'anthropic' ? 'Claude (Anthropic)' : 'GPT (OpenAI)'}
+                {keyStatus?.[p] ? ' • set' : ''}
               </button>
             ))}
           </div>
-          <p className="text-[10px] text-slate-500">
+          <p className="text-[11px] text-zinc-500 mt-2">
             Switching providers clears the current chat history.
           </p>
-        </section>
+        </Field>
 
-        <section className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-            Anthropic API key {keyStatus?.anthropic ? '(saved)' : '(not set)'}
-          </label>
+        <Field label={`Anthropic API key${keyStatus?.anthropic ? ' (saved)' : ''}`}>
           <input
             type="password"
             value={anthropicKey}
             onChange={(e) => setAnthropicKey(e.target.value)}
             placeholder="sk-ant-..."
-            className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2 text-sm font-mono text-slate-200 focus:border-cyan-500/40 focus:outline-none"
+            className="w-full bg-zinc-950/60 border border-white/10 rounded-lg px-3 py-2 text-[13px] font-mono text-zinc-200 focus:border-blue-400/40 focus:outline-none"
           />
-        </section>
+        </Field>
 
-        <section className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-            OpenAI API key {keyStatus?.openai ? '(saved)' : '(not set)'}
-          </label>
+        <Field label={`OpenAI API key${keyStatus?.openai ? ' (saved)' : ''}`}>
           <input
             type="password"
             value={openaiKey}
             onChange={(e) => setOpenaiKey(e.target.value)}
             placeholder="sk-..."
-            className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2 text-sm font-mono text-slate-200 focus:border-cyan-500/40 focus:outline-none"
+            className="w-full bg-zinc-950/60 border border-white/10 rounded-lg px-3 py-2 text-[13px] font-mono text-zinc-200 focus:border-blue-400/40 focus:outline-none"
           />
-        </section>
+        </Field>
 
-        {msg && <div className="text-xs text-cyan-300 font-mono">{msg}</div>}
+        {msg && <div className="text-xs text-blue-300">{msg}</div>}
 
         <button
           onClick={save}
           disabled={busy}
-          className="w-full py-3 bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-cyan-500/30 transition disabled:opacity-50"
+          className="w-full py-2.5 bg-blue-500/20 border border-blue-400/40 text-blue-100 rounded-lg text-[13px] font-medium hover:bg-blue-500/30 transition disabled:opacity-50"
         >
-          {busy ? 'saving...' : 'save'}
+          {busy ? 'Saving…' : 'Save'}
         </button>
 
-        <p className="text-[10px] text-slate-500 text-center">
-          Keys are encrypted at rest using your OS keychain (Electron safeStorage).
+        <p className="text-[11px] text-zinc-500 text-center">
+          Keys are encrypted at rest in your OS keychain.
         </p>
       </div>
     </div>
   );
 };
+
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="space-y-1.5">
+    <label className="text-[11px] font-medium text-zinc-400">{label}</label>
+    {children}
+  </div>
+);
 
 export default SettingsPanel;

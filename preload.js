@@ -5,6 +5,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   close: () => ipcRenderer.send('window-close'),
 });
 
+function on(channel, cb) {
+  const handler = (_e, data) => cb(data);
+  ipcRenderer.on(channel, handler);
+  return () => ipcRenderer.removeListener(channel, handler);
+}
+
 contextBridge.exposeInMainWorld('mira', {
   keys: {
     status: () => ipcRenderer.invoke('mira:keys:status'),
@@ -39,10 +45,16 @@ contextBridge.exposeInMainWorld('mira', {
   model: {
     status: () => ipcRenderer.invoke('mira:model:status'),
     download: () => ipcRenderer.invoke('mira:model:download'),
-    onProgress: (cb) => {
-      const handler = (_e, data) => cb(data);
-      ipcRenderer.on('mira:model:progress', handler);
-      return () => ipcRenderer.removeListener('mira:model:progress', handler);
-    },
+    onProgress: (cb) => on('mira:model:progress', cb),
+  },
+  window: {
+    show: () => ipcRenderer.invoke('mira:window:show'),
+    hide: () => ipcRenderer.invoke('mira:window:hide'),
+  },
+  overlay: {
+    hide: () => ipcRenderer.invoke('mira:overlay:hide'),
+    onShow: (cb) => on('mira:overlay:show', cb),
+    onHide: (cb) => on('mira:overlay:hide', cb),
+    onToggle: (cb) => on('mira:overlay:toggle', cb),
   },
 });

@@ -86,6 +86,16 @@ declare global {
         download: () => Promise<{ ok: true; path: string } | { ok: false; error: { kind: string; message: string } }>;
         onProgress: (cb: (data: { downloaded: number; total: number }) => void) => () => void;
       };
+      window: {
+        show: () => Promise<{ ok: boolean }>;
+        hide: () => Promise<{ ok: boolean }>;
+      };
+      overlay: {
+        hide: () => Promise<{ ok: boolean }>;
+        onShow: (cb: () => void) => () => void;
+        onHide: (cb: () => void) => () => void;
+        onToggle: (cb: () => void) => () => void;
+      };
     };
   }
 }

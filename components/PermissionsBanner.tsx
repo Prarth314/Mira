@@ -15,8 +15,8 @@ const PermissionsBanner: React.FC<Props> = ({ report, onRequestMic, onOpenSettin
   if (micOk && screenOk) return null;
 
   return (
-    <div className="bg-amber-500/10 border border-amber-400/30 rounded-2xl p-4 flex flex-wrap gap-3 items-center text-amber-200 text-xs font-mono">
-      <span className="font-black uppercase tracking-widest">Setup needed</span>
+    <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl px-4 py-3 flex flex-wrap gap-2 items-center text-amber-200 text-[12px]">
+      <span className="font-medium">Permissions needed</span>
       {!micOk && (
         <button
           onClick={() =>
@@ -24,17 +24,17 @@ const PermissionsBanner: React.FC<Props> = ({ report, onRequestMic, onOpenSettin
               ? onRequestMic()
               : onOpenSettings('mic')
           }
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/30"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/30"
         >
-          <Mic size={14} /> Microphone ({report.microphone})
+          <Mic size={12} /> Microphone ({report.microphone})
         </button>
       )}
       {!screenOk && (
         <button
           onClick={() => onOpenSettings('screen')}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/30"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/30"
         >
-          <Monitor size={14} /> Screen Recording ({report.screen})
+          <Monitor size={12} /> Screen Recording ({report.screen})
         </button>
       )}
     </div>

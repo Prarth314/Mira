@@ -4,65 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mira</title>
-  <link rel="preconnect" href="https://rsms.me/">
-  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root { font-family: 'Inter', sans-serif; }
-    @supports (font-variation-settings: normal) {
-      :root { font-family: 'Inter var', sans-serif; }
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+      color-scheme: dark;
     }
     body {
-      background-color: #020617;
-      background-image:
-        radial-gradient(circle at 50% -20%, #0c4a6e 0%, transparent 50%),
-        radial-gradient(circle at 0% 100%, #082f49 0%, transparent 40%);
-      color: #f8fafc;
+      background-color: #09090b;
+      color: #e4e4e7;
       margin: 0;
       overflow: hidden;
       -webkit-user-select: none;
       user-select: none;
-    }
-    .font-mono {
-      font-family: 'JetBrains Mono', 'Cascadia Code', 'Source Code Pro', monospace;
-    }
-    .glass-panel {
-      background: rgba(15, 23, 42, 0.4);
-      backdrop-filter: blur(24px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    .glass-card {
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .glass-card:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: rgba(34, 211, 238, 0.2);
-    }
-    .sr-only {
-      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
     }
     .draggable { -webkit-app-region: drag; }
     .non-draggable { -webkit-app-region: no-drag; }
     button:focus-visible {
-      outline: 2px solid #22d3ee;
-      outline-offset: 4px;
+      outline: 2px solid #60a5fa;
+      outline-offset: 2px;
     }
-    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.2); border-radius: 10px; }
-
-    @keyframes slow-pulse {
-      0%, 100% { opacity: 0.3; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.05); }
-    }
-    .animate-slow-pulse {
-      animation: slow-pulse 8s ease-in-out infinite;
-    }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.16); }
   </style>
 </head>
 <body>

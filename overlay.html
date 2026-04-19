@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mira Overlay</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      color: #e4e4e7;
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      font-size: 12px;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { background: transparent; }
+    #root { height: 100vh; width: 100vw; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/overlay/index.tsx"></script>
+</body>
+</html>
