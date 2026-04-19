@@ -1,31 +1,24 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { CommandLog } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Database, Terminal, Cpu, HardDrive, ShieldCheck, Layers } from 'lucide-react';
+import type { Telemetry } from '../src/types/window';
 
 interface SidebarProps {
   logs: CommandLog[];
+  telemetry: Telemetry | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ logs }) => {
+const Sidebar: React.FC<SidebarProps> = ({ logs, telemetry }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [telemetry, setTelemetry] = useState({ cpu: 0, mem: 0 });
 
-  // BACKEND LOGIC PRESERVED (UNCHANGED)
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [logs]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTelemetry({
-        cpu: Math.floor(Math.random() * 8) + 1,
-        mem: 12.4 + (Math.random() * 0.2)
-      });
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  const cpu = telemetry ? telemetry.cpuLoad : 0;
+  const mem = telemetry ? telemetry.memUsedGB : 0;
 
   return (
     <aside className="flex-1 flex flex-col gap-8 h-full p-0 bg-transparent text-slate-200">
@@ -58,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ logs }) => {
               <span className="text-[11px] font-black uppercase tracking-[0.3em] font-mono">Cortex Load</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-black font-mono text-white tracking-tighter tabular-nums drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">{telemetry.cpu}</span>
+              <span className="text-5xl font-black font-mono text-white tracking-tighter tabular-nums drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">{cpu}</span>
               <span className="text-[12px] font-black text-cyan-500/60 uppercase tracking-widest font-mono">%</span>
             </div>
             {/* Segmented Block Progress Bar */}
@@ -66,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ logs }) => {
               {[...Array(12)].map((_, i) => (
                 <motion.div 
                   key={i}
-                  animate={{ opacity: (telemetry.cpu * 0.12) >= (i / 12) * 12 ? 1 : 0.1 }}
+                  animate={{ opacity: (cpu * 0.12) >= (i / 12) * 12 ? 1 : 0.1 }}
                   className="flex-1 h-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)] rounded-sm"
                 />
               ))}
@@ -80,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ logs }) => {
               <span className="text-[11px] font-black uppercase tracking-[0.3em] font-mono">Neural Buffer</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-black font-mono text-white tracking-tighter tabular-nums drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">{telemetry.mem.toFixed(1)}</span>
+              <span className="text-5xl font-black font-mono text-white tracking-tighter tabular-nums drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">{mem.toFixed(1)}</span>
               <span className="text-[12px] font-black text-cyan-500/60 uppercase tracking-widest font-mono">GB</span>
             </div>
             {/* Segmented Block Progress Bar */}
@@ -88,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ logs }) => {
               {[...Array(12)].map((_, i) => (
                 <motion.div 
                   key={i}
-                  animate={{ opacity: (telemetry.mem / 16) >= (i / 12) ? 1 : 0.1 }}
+                  animate={{ opacity: (mem / 16) >= (i / 12) ? 1 : 0.1 }}
                   className="flex-1 h-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)] rounded-sm"
                 />
               ))}

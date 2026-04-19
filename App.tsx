@@ -4,13 +4,17 @@ import { ShieldCheck, Settings, Mic, Send } from 'lucide-react';
 import AudioVisualizer from './components/AudioVisualizer';
 import Sidebar from './components/Sidebar';
 import SettingsPanel from './components/SettingsPanel';
+import PermissionsBanner from './components/PermissionsBanner';
 import { useVoiceLoop } from './hooks/useVoiceLoop';
+import { useTelemetry } from './hooks/useTelemetry';
+import { usePermissions } from './hooks/usePermissions';
 import type { CommandLog } from './types';
 
 const BOOT_STEPS = [
   'MOUNTING ROOT_FS...',
   'SYNCING IPC BRIDGE...',
   'PROVIDER REGISTRY ONLINE...',
+  'WHISPER MODEL READY.',
   'ACTUATOR_READY.',
 ];
 
@@ -19,9 +23,12 @@ const App: React.FC = () => {
   const [bootLogs, setBootLogs] = useState<string[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [holdingSpace, setHoldingSpace] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { messages, busy, send } = useVoiceLoop();
+  const { messages, state, analyser, sendText, startRecording, stopAndSubmit } = useVoiceLoop();
+  const telemetry = useTelemetry(2500);
+  const { report: perms, requestMic, openSettings } = usePermissions();
 
   useEffect(() => {
     let step = 0;
@@ -33,13 +40,43 @@ const App: React.FC = () => {
         clearInterval(interval);
         setTimeout(() => setIsBooting(false), 600);
       }
-    }, 250);
+    }, 220);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (!isBooting) inputRef.current?.focus();
   }, [isBooting]);
+
+  // Press-and-hold Space for push-to-talk. Don't trigger when typing in input.
+  useEffect(() => {
+    const isTypingTarget = (t: EventTarget | null) =>
+      t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA');
+
+    const onDown = (e: globalThis.KeyboardEvent) => {
+      if (e.code !== 'Space' || isTypingTarget(e.target)) return;
+      if (e.repeat) return;
+      e.preventDefault();
+      if (state === 'idle') {
+        setHoldingSpace(true);
+        void startRecording();
+      }
+    };
+    const onUp = (e: globalThis.KeyboardEvent) => {
+      if (e.code !== 'Space' || isTypingTarget(e.target)) return;
+      e.preventDefault();
+      if (holdingSpace) {
+        setHoldingSpace(false);
+        void stopAndSubmit();
+      }
+    };
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    return () => {
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+    };
+  }, [state, holdingSpace, startRecording, stopAndSubmit]);
 
   const logs: CommandLog[] = messages.map((m) => ({
     timestamp: new Date(),
@@ -54,18 +91,18 @@ const App: React.FC = () => {
       m.type === 'user'
         ? `▸ ${m.text}`
         : m.type === 'action'
-        ? `⟶ ${m.text}`
+        ? m.text
         : m.type === 'error'
         ? `✕ ${m.text}`
         : m.text,
   }));
 
   function onKey(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && !e.shiftKey && draft.trim() && !busy) {
+    if (e.key === 'Enter' && !e.shiftKey && draft.trim() && state === 'idle') {
       e.preventDefault();
       const text = draft;
       setDraft('');
-      void send(text);
+      void sendText(text);
     }
   }
 
@@ -106,6 +143,15 @@ const App: React.FC = () => {
     );
   }
 
+  const stateLabel =
+    state === 'recording'
+      ? 'LISTENING'
+      : state === 'thinking'
+      ? 'THINKING'
+      : state === 'speaking'
+      ? 'SPEAKING'
+      : 'IDLE — HOLD SPACE TO TALK';
+
   return (
     <div className="flex h-screen w-full bg-[#020617] font-sans text-slate-200 overflow-hidden relative">
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
@@ -118,7 +164,7 @@ const App: React.FC = () => {
           <div className="flex flex-col -space-y-1">
             <span className="text-[12px] font-black tracking-[0.5em] uppercase text-slate-200">Mira</span>
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-              v0.1 dev
+              v0.1 dev — {stateLabel}
             </span>
           </div>
         </div>
@@ -155,15 +201,32 @@ const App: React.FC = () => {
 
       <div className="flex-1 flex gap-8 p-8 pt-28 overflow-hidden relative z-10">
         <div className="w-[440px] flex flex-col gap-8 h-full overflow-hidden">
-          <Sidebar logs={logs} />
+          <Sidebar logs={logs} telemetry={telemetry} />
         </div>
 
         <div className="flex-1 flex flex-col gap-6 h-full">
+          <PermissionsBanner
+            report={perms}
+            onRequestMic={requestMic}
+            onOpenSettings={openSettings}
+          />
+
           <div className="flex-1 flex items-center justify-center">
             <div className="relative w-[450px] h-[450px]">
-              <AudioVisualizer isActive={busy} analyser={null} />
+              <AudioVisualizer isActive={state === 'recording'} analyser={analyser} />
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <Mic size={32} className={busy ? 'text-cyan-400 animate-pulse' : 'text-slate-700'} />
+                <Mic
+                  size={32}
+                  className={
+                    state === 'recording'
+                      ? 'text-cyan-400 animate-pulse'
+                      : state === 'thinking'
+                      ? 'text-amber-400 animate-pulse'
+                      : state === 'speaking'
+                      ? 'text-emerald-400 animate-pulse'
+                      : 'text-slate-700'
+                  }
+                />
               </div>
             </div>
           </div>
@@ -175,17 +238,25 @@ const App: React.FC = () => {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKey}
-              disabled={busy}
-              placeholder={busy ? 'thinking...' : 'type a command (voice in Phase 3)'}
+              disabled={state !== 'idle'}
+              placeholder={
+                state === 'recording'
+                  ? 'listening...'
+                  : state === 'thinking'
+                  ? 'thinking...'
+                  : state === 'speaking'
+                  ? 'speaking...'
+                  : 'hold Space to talk, or type a command'
+              }
               className="flex-1 bg-transparent text-sm font-mono text-slate-200 placeholder-slate-600 focus:outline-none px-3"
             />
             <button
               onClick={() => {
                 const text = draft;
                 setDraft('');
-                void send(text);
+                void sendText(text);
               }}
-              disabled={busy || !draft.trim()}
+              disabled={state !== 'idle' || !draft.trim()}
               className="bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 rounded-xl p-2.5 hover:bg-cyan-500/30 transition disabled:opacity-30"
               aria-label="Send"
             >
