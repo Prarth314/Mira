@@ -165,21 +165,10 @@ const Overlay: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  // Keyboard: Esc cancels, Space toggles when overlay focused
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        void cancel();
-      } else if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault();
-        if (state === 'recording') void stopAndProcess();
-        else if (state === 'idle') void startRecording();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [state]);
+  // No in-window keyboard listener: the overlay window is non-focusable
+  // (NSPanel + focusable:false) so it doesn't steal focus from the user's
+  // foreground app. State is driven entirely by Option+Space via the main
+  // process globalShortcut.
 
   useEffect(() => () => stopCapture(), []);
 
@@ -212,7 +201,7 @@ const Overlay: React.FC = () => {
             <div className="text-[12px] text-red-300 truncate" title={errorText}>{errorText}</div>
           )}
           {state === 'idle' && (
-            <div className="text-[12px] text-zinc-500">Press ⌥Space to talk</div>
+            <div className="text-[12px] text-zinc-500">Press ⌥Space again to start</div>
           )}
         </div>
 

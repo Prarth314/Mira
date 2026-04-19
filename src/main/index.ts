@@ -5,7 +5,14 @@ import { hideOverlay, toggleOverlay, destroyOverlay } from './overlay-window';
 
 const isDev = process.env.NODE_ENV === 'development';
 const DEV_URL = 'http://localhost:5173';
-const HOTKEY = 'Alt+Space'; // Option+Space on macOS
+const HOTKEY_OVERLAY = 'Alt+Space';      // Option+Space on macOS
+const HOTKEY_MAIN_WINDOW = 'Cmd+Shift+M'; // Re-open main window since no Dock icon
+
+if (process.platform === 'darwin' && app.dock) {
+  // Accessory mode: no Dock icon. The overlay can show without context-switching
+  // away from whatever app the user is in. Main window still works when shown.
+  app.setActivationPolicy('accessory');
+}
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -79,12 +86,15 @@ void app.whenReady().then(() => {
 
   createMainWindow();
 
-  const ok = globalShortcut.register(HOTKEY, () => {
+  const overlayOk = globalShortcut.register(HOTKEY_OVERLAY, () => {
     toggleOverlay();
   });
-  if (!ok) {
-    console.warn(`Failed to register global hotkey ${HOTKEY}`);
-  }
+  if (!overlayOk) console.warn(`Failed to register ${HOTKEY_OVERLAY}`);
+
+  const showMainOk = globalShortcut.register(HOTKEY_MAIN_WINDOW, () => {
+    showMainWindow();
+  });
+  if (!showMainOk) console.warn(`Failed to register ${HOTKEY_MAIN_WINDOW}`);
 });
 
 app.on('window-all-closed', () => {

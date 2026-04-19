@@ -38,11 +38,14 @@ export function getOrCreateOverlay(): BrowserWindow {
     skipTaskbar: true,
     alwaysOnTop: true,
     hasShadow: false,
+    focusable: false,
     backgroundColor: '#00000000',
+    type: process.platform === 'darwin' ? 'panel' : undefined,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, '..', '..', 'preload.js'),
+      backgroundThrottling: false,
     },
   });
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -64,7 +67,6 @@ export function showOverlay(autoRecord: boolean): void {
   const win = getOrCreateOverlay();
   repositionToScreenCenter(win);
   win.showInactive();
-  win.focus();
   win.webContents.send(autoRecord ? 'mira:overlay:show' : 'mira:overlay:hide');
 }
 
@@ -75,7 +77,6 @@ export function toggleOverlay(): void {
   } else {
     repositionToScreenCenter(win);
     win.showInactive();
-    win.focus();
     win.webContents.send('mira:overlay:show');
   }
 }
