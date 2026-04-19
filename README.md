@@ -1,20 +1,26 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Mira
 
-# Run and deploy your AI Studio app
+Voice-controlled desktop actuator. Press to talk, the model decides what to do, your machine does it.
 
-This contains everything you need to run your app locally.
+Provider-agnostic by design: bring your own Anthropic or OpenAI key. Voice runs on-device (Whisper) so audio never leaves your machine.
 
-View your app in AI Studio: https://ai.studio/apps/drive/14ylVzwErRU-GBd7c8Qt1EEiKcpzHwgLA
+> Status: rebuild in progress on `feat/multi-provider-voice`. The original AI-Studio export wired Gemini Live; the rewrite swaps that for a typed provider abstraction with on-device speech. See `PLAN.md`.
 
-## Run Locally
+## Run locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js 20+, macOS (Windows/Linux later).
 
+```bash
+npm install
+cp .env.local.example .env.local   # fill in ANTHROPIC_API_KEY and/or OPENAI_API_KEY
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+`npm run dev` starts Vite (port 5173) and Electron together. Closing either kills both.
+
+## Scripts
+
+- `npm run dev` — dev mode (Vite + Electron, hot reload)
+- `npm run build` — production renderer build
+- `npm run start` — run packaged app against the production build
+- `npm run typecheck` — `tsc --noEmit`
