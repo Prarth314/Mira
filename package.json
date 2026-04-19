@@ -1,13 +1,32 @@
-
 {
-  "name": "neural-os-actuator",
-  "version": "11.0.8",
+  "name": "mira",
+  "version": "0.1.0",
+  "description": "Voice-controlled desktop actuator. Provider-agnostic (Anthropic + OpenAI) with on-device speech.",
   "main": "main.js",
-  "description": "Neural OS Actuator Desktop Environment",
   "scripts": {
-    "start": "electron ."
+    "dev": "concurrently -k -n vite,electron -c cyan,magenta \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "build": "vite build",
+    "start": "cross-env NODE_ENV=production electron .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "electron": "^31.0.0"
+    "@anthropic-ai/sdk": "^0.90.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
+    "openai": "^6.34.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^41.2.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.8",
+    "wait-on": "^9.0.5"
   }
 }
