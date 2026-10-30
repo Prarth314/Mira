@@ -11,7 +11,8 @@ test('production build opens with an isolated preload and settings bridge', asyn
     ),
   );
   delete env.ELECTRON_RUN_AS_NODE;
-  const app = await electron.launch({ args: ['.', `--user-data-dir=${profile}`], env });
+  const executablePath = process.env.MIRA_TEST_EXECUTABLE;
+  const app = await electron.launch({ executablePath, args: [...(executablePath ? [] : ['.']), `--user-data-dir=${profile}`], env });
   try {
     const page = await app.firstWindow();
     await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();

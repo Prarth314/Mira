@@ -14,7 +14,7 @@ const App: React.FC = () => {
   const [input, setInput] = useState('');
   const [review, setReview] = useState('');
   const [busy, setBusy] = useState(false);
-  const [model, setModel] = useState<{ present: boolean } | null>(null);
+  const [model, setModel] = useState<{ present: boolean; runtimeAvailable: boolean } | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const draft = state.draft;
   const active = state.phase !== 'idle';
@@ -102,7 +102,7 @@ const App: React.FC = () => {
             </section>
           </div>
           <footer className="workspace-footer"><span><ShieldCheck size={14} /> Drafts stay in memory. No transcript history is saved.</span><span>Built for the space between thought and action.</span></footer>
-          {model && !model.present && <div className="setup-strip"><div><strong>Set up local speech</strong><p>Download the verified English model (~148 MB). Typed instructions work immediately.</p></div><button className="secondary-button" disabled={busy || active || progress !== null} onClick={() => { void perform(download); }}>{progress !== null ? `Downloading ${progress}%` : 'Download model'}</button></div>}
+          {model && !model.present && <div className="setup-strip"><div><strong>Set up local speech</strong><p>Download the verified English model (~148 MB). Typed instructions work immediately.</p></div><button className="secondary-button" disabled={busy || active || progress !== null} onClick={() => { void perform(download); }}>{progress !== null ? `Downloading ${progress}%` : 'Download model'}</button>{progress !== null && <button className="secondary-button" onClick={() => { void api?.model.cancel(); }}>Cancel download</button>}</div>}
         </section>
       </main>
     </div>

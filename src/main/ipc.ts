@@ -3,7 +3,7 @@ import { handle } from './security';
 import { record, text, providerName } from './validation';
 import { getKey, setKey, status } from './keystore';
 import { getSettings, updateSettings } from './settings';
-import { downloadModel, modelStatus } from './stt';
+import { downloadModel, modelStatus, cancelModelDownload } from './stt';
 import { probePermissions, requestMicrophone, openSettingsForMicrophone } from './permissions';
 import { registerStudio } from './studio';
 import { hideOverlay } from './overlay-window';
@@ -35,6 +35,7 @@ export function registerIpc(): void {
     return { ok: true };
   });
   handle('mira:model:status', async () => ({ ...await modelStatus(), keyConfigured: !!await getKey((await getSettings()).defaultProvider) }));
+  handle('mira:model:cancel', () => { cancelModelDownload(); return { ok: true }; }, ['workspace']);
   handle('mira:model:download', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     try {

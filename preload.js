@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('mira', {
   provider: { get: () => ipcRenderer.invoke('mira:provider:get'), set: (name) => ipcRenderer.invoke('mira:provider:set', {name}) },
   settings: { get: () => ipcRenderer.invoke('mira:settings:get'), update: (patch) => ipcRenderer.invoke('mira:settings:update', patch) },
   permissions: { probe: () => ipcRenderer.invoke('mira:permissions:probe'), requestMic: () => ipcRenderer.invoke('mira:permissions:requestMic'), openSettings: (what) => ipcRenderer.invoke('mira:permissions:openSettings', {what}) },
-  model: { status: () => ipcRenderer.invoke('mira:model:status'), download: () => ipcRenderer.invoke('mira:model:download'), onProgress: (callback) => on('mira:model:progress', callback) },
+  model: { status: () => ipcRenderer.invoke('mira:model:status'), download: () => ipcRenderer.invoke('mira:model:download'), cancel: () => ipcRenderer.invoke('mira:model:cancel'), onProgress: (callback) => on('mira:model:progress', callback) },
   window: { show: () => ipcRenderer.invoke('mira:window:show'), hide: () => ipcRenderer.invoke('mira:window:hide') },
   overlay: { hide: () => ipcRenderer.invoke('mira:overlay:hide'), onShow: (callback) => on('mira:overlay:show', callback), onToggle: (callback) => on('mira:overlay:toggle', callback), onHide: (callback) => on('mira:overlay:hide', callback) },
   studio: {

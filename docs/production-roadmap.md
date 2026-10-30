@@ -40,3 +40,14 @@ Signed public releases require publisher credentials. macOS behavior requires re
 ## Evidence
 
 Record the exact commit, OS/app versions, hardware, sample size, failure definitions and commands for each release candidate. Tests must measure transcript meaning, technical terms, cancellation, routing, latency and resource use. Do not infer external receipt from a successfully issued keyboard shortcut.
+
+## Implementation evidence — October 30, 2026
+
+- Repository: MIT license, attributed README, contributor/security guidance, GitHub description and topics published.
+- Build: strict TypeScript, lint, local CSS, compiled main/preload, three-OS CI. Initial Windows unpacked build and desktop smoke test passed.
+- Trusted core: registered-window/top-frame IPC checks, role restrictions, bounded inputs, microphone-only permission handling, navigation restrictions, atomic serialized settings/key writes.
+- Voice workspace: owned recording sessions, AudioWorklet capture, cancellable processing, optional cloud refinement, editable draft review, manual copy, explicit attempted-delivery semantics and terminal control-character rejection.
+- Speech: pinned official runtime/source archives, resource manifest, pinned model revision/checksum, progress/cancellation, disk checks. Real English transcription through IPC passed with the upstream JFK sample on Windows.
+- Automated baseline: 71 unit tests passed, plus desktop preparation/copy/discard validation. These are engineering checks, not broad accuracy or native-app certification.
+
+Remaining: scoped project context, direct editor integration, broader accessibility testing, observed native delivery matrix, performance evaluation corpus, signed installers, authenticated updates, public beta and user validation. Public stable release remains blocked on those acceptance gates and signing credentials.

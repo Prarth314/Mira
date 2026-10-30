@@ -1,0 +1,38 @@
+name: Desktop packages
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'src/**'
+      - 'package*.json'
+      - '.github/workflows/package.yml'
+permissions:
+  contents: read
+concurrency:
+  group: packages-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run package:dir
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - run: node scripts/smoke-packaged.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-internal-${{ matrix.os }}
+          path: release/
+          retention-days: 7

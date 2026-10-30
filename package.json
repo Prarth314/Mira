@@ -13,9 +13,10 @@
     "build:main": "node scripts/build-main.mjs",
     "lint": "eslint .",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
-    "package:dir": "npm run build && electron-builder --dir --publish never",
-    "package": "npm run build && electron-builder --publish never",
-    "test:e2e": "npm run build && playwright test"
+    "package:dir": "npm run prepare:speech && npm run build && electron-builder --dir --publish never",
+    "package": "npm run prepare:speech && npm run build && electron-builder --publish never",
+    "test:e2e": "npm run build && playwright test",
+    "prepare:speech": "node scripts/prepare-whisper.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
@@ -70,7 +71,8 @@
       "dist/**/*",
       "dist-electron/**/*",
       "package.json",
-      "LICENSE"
+      "LICENSE",
+      "docs/THIRD_PARTY_NOTICES.md"
     ],
     "asar": true,
     "win": {
@@ -92,6 +94,15 @@
         "NSMicrophoneUsageDescription": "Mira records audio only when you start a voice session."
       }
     },
-    "publish": null
+    "publish": null,
+    "extraResources": [
+      {
+        "from": "vendor/whisper/runtime",
+        "to": "whisper",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }

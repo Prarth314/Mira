@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['node_modules/**', 'dist/**', 'dist-electron/**', 'release/**', 'playwright-report/**', 'test-results/**'] },
+  { ignores: ['node_modules/**', 'vendor/**', 'dist/**', 'dist-electron/**', 'release/**', 'playwright-report/**', 'test-results/**'] },
   js.configs.recommended,
   { files: ['public/pcm-worklet.js'], languageOptions: { globals: { AudioWorkletProcessor: 'readonly', registerProcessor: 'readonly' } } },
   ...tseslint.configs.recommended,
@@ -16,7 +16,7 @@ export default tseslint.config(
   },
   {
     files: ['*.js', '**/*.mjs'],
-    languageOptions: { globals: { require: 'readonly', process: 'readonly', console: 'readonly' } },
+    languageOptions: { globals: { require: 'readonly', process: 'readonly', console: 'readonly', fetch: 'readonly', AbortSignal: 'readonly', Buffer: 'readonly' } },
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
 );

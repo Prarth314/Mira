@@ -1,175 +1,149 @@
 import { app } from 'electron';
 import { spawn } from 'node:child_process';
-import { promises as fs } from 'node:fs';
+import { promises as fs, createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { MiraError } from '../types/MiraError';
 import { writeInt16PcmAsWav } from './wav';
-
-type ModelInfo = {
-  name: string;
-  url: string;
-  sha256: string;
-  sizeBytes: number;
-};
-
-const DEFAULT_MODEL: ModelInfo = {
-  name: 'ggml-base.en.bin',
-  url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin',
-  sha256: '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe',
-  sizeBytes: 147951465,
-};
+import { MODEL } from './model-info';
 
 let cachedBinary: string | null = null;
 let modelReady: Promise<string> | null = null;
+let downloadController: AbortController | null = null;
+const progressListeners = new Set<DownloadProgress>();
+export type DownloadProgress = (downloaded: number, total: number) => void;
+const modelDir = () => path.join(app.getPath('userData'), 'models');
+const modelPath = () => path.join(modelDir(), MODEL.name);
 
-function modelDir(): string {
-  return path.join(app.getPath('userData'), 'models');
-}
-
-function modelPath(): string {
-  return path.join(modelDir(), DEFAULT_MODEL.name);
+async function sha256OfFile(file: string): Promise<string> {
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(file)) hash.update(chunk);
+  return hash.digest('hex');
 }
 
 async function findWhisperBinary(): Promise<string> {
   if (cachedBinary) return cachedBinary;
-  // Try PATH (e.g. brew install whisper-cpp installs `whisper-cli`)
-  const candidates = ['whisper-cli', 'whisper-cpp', 'main'];
-  for (const name of candidates) {
-    const found = await which(name);
-    if (found) {
-      cachedBinary = found;
-      return found;
-    }
-  }
-  // Phase 5 will bundle a binary in vendor/whisper/
-  const bundled = path.join(app.getAppPath(), 'vendor', 'whisper', 'whisper-cli');
+  const directory = app.isPackaged
+    ? path.join(process.resourcesPath, 'whisper')
+    : path.join(app.getAppPath(), 'vendor', 'whisper', 'runtime');
+  const name = process.platform === 'win32' ? 'whisper-cli.exe' : 'whisper-cli';
   try {
-    await fs.access(bundled, fs.constants.X_OK);
-    cachedBinary = bundled;
-    return bundled;
+    const manifest = JSON.parse(await fs.readFile(path.join(directory, 'manifest.json'), 'utf8')) as {
+      platform: string; arch: string; files: Record<string, string>;
+    };
+    if (manifest.platform !== process.platform || manifest.arch !== process.arch || !manifest.files[name]) throw new Error('Wrong runtime');
+    for (const [file, digest] of Object.entries(manifest.files)) {
+      if (!/^[a-zA-Z0-9._-]+$/.test(file) || !/^[a-f0-9]{64}$/.test(digest) ||
+        await sha256OfFile(path.join(directory, file)) !== digest) throw new Error('Runtime integrity failure');
+    }
+    cachedBinary = path.join(directory, name);
+    return cachedBinary;
   } catch {
-    throw new MiraError(
-      'stt_failed',
-      'whisper-cli not found. Install with: brew install whisper-cpp',
-    );
+    if (app.isPackaged) throw new MiraError('stt_failed', 'The bundled speech runtime is missing or damaged. Reinstall Mira.');
   }
-}
-
-async function which(cmd: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    const child = spawn('/usr/bin/which', [cmd]);
+  // Development-only fallback. Packaged apps never search an uncontrolled PATH.
+  const found = await new Promise<string | null>((resolve) => {
+    const child = spawn(process.platform === 'win32' ? 'where.exe' : '/usr/bin/which', ['whisper-cli'], { windowsHide: true, timeout: 5000 });
     let out = '';
-    child.stdout.on('data', (b: Buffer) => (out += b.toString()));
-    child.on('close', (code) => resolve(code === 0 ? out.trim() : null));
+    child.stdout.on('data', (data: Buffer) => { out += data.toString(); });
     child.on('error', () => resolve(null));
+    child.on('close', (code) => resolve(code === 0 ? out.trim().split(/\r?\n/)[0] : null));
   });
+  if (found) { cachedBinary = found; return found; }
+  throw new MiraError('stt_failed', 'Speech runtime unavailable. Developers: run npm run prepare:speech before recording.');
 }
 
-async function sha256OfFile(p: string): Promise<string> {
-  const buf = await fs.readFile(p);
-  return createHash('sha256').update(buf).digest('hex');
+async function validModel(): Promise<boolean> {
+  try {
+    const stat = await fs.stat(modelPath());
+    return stat.size === MODEL.sizeBytes && await sha256OfFile(modelPath()) === MODEL.sha256;
+  } catch { return false; }
 }
 
-export type DownloadProgress = (downloaded: number, total: number) => void;
-
-async function ensureModel(onProgress?: DownloadProgress): Promise<string> {
+async function ensureModel(): Promise<string> {
   if (modelReady) return modelReady;
+  const controller = new AbortController();
+  downloadController = controller;
   modelReady = (async () => {
-    const target = modelPath();
-    try {
-      await fs.access(target);
-      const got = await sha256OfFile(target);
-      if (got === DEFAULT_MODEL.sha256) return target;
-      // Mismatched checksum → re-download
-      await fs.unlink(target);
-    } catch {
-      // not present
-    }
+    if (await validModel()) return modelPath();
     await fs.mkdir(modelDir(), { recursive: true });
-    const tmp = `${target}.partial`;
-    const res = await fetch(DEFAULT_MODEL.url);
-    if (!res.ok || !res.body) {
-      throw new MiraError('stt_failed', `model download failed: HTTP ${res.status}`);
+    const disk = await fs.statfs(modelDir());
+    if (Number(disk.bavail) * Number(disk.bsize) < MODEL.sizeBytes + 10 * 1024 * 1024) {
+      throw new MiraError('stt_failed', 'Not enough free disk space for the speech model.');
     }
-    const total = Number(res.headers.get('content-length') ?? DEFAULT_MODEL.sizeBytes);
-    const reader = res.body.getReader();
-    const writer = await fs.open(tmp, 'w');
-    let downloaded = 0;
+    const partial = `${modelPath()}.partial`;
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(10 * 60_000)]);
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        await writer.write(value);
-        downloaded += value.byteLength;
-        onProgress?.(downloaded, total);
+      const response = await fetch(MODEL.url, { signal });
+      if (!response.ok || !response.body) throw new MiraError('stt_failed', 'Could not download speech model.');
+      const writer = await fs.open(partial, 'w', 0o600);
+      let downloaded = 0;
+      try {
+        for await (const chunk of response.body) {
+          signal.throwIfAborted();
+          downloaded += chunk.byteLength;
+          if (downloaded > MODEL.sizeBytes) throw new MiraError('stt_failed', 'Unexpected model download size.');
+          await writer.writeFile(chunk);
+          for (const listener of progressListeners) listener(downloaded, MODEL.sizeBytes);
+        }
+        await writer.sync();
+      } finally { await writer.close(); }
+      if (downloaded !== MODEL.sizeBytes || await sha256OfFile(partial) !== MODEL.sha256) {
+        throw new MiraError('stt_failed', 'Model integrity check failed. Retry the download.');
       }
-    } finally {
-      await writer.close();
-    }
-    const got = await sha256OfFile(tmp);
-    if (got !== DEFAULT_MODEL.sha256) {
-      await fs.unlink(tmp);
-      throw new MiraError(
-        'stt_failed',
-        `model checksum mismatch (expected ${DEFAULT_MODEL.sha256}, got ${got})`,
-      );
-    }
-    await fs.rename(tmp, target);
-    return target;
-  })().catch((e) => {
-    modelReady = null;
-    throw e;
+      signal.throwIfAborted();
+      await fs.rename(partial, modelPath());
+      return modelPath();
+    } finally { await fs.rm(partial, { force: true }); }
+  })().catch((error: unknown) => { modelReady = null; throw error; }).finally(() => {
+    if (downloadController === controller) downloadController = null;
   });
   return modelReady;
 }
 
 export async function transcribePcm(pcm: Buffer, signal?: AbortSignal): Promise<string> {
   signal?.throwIfAborted();
-  if (pcm.length === 0) return '';
+  if (!pcm.length) return '';
   const binary = await findWhisperBinary();
-  const model = await ensureModel();
+  if (!await validModel()) throw new MiraError('stt_failed', 'Download the speech model from the workspace before recording.');
   signal?.throwIfAborted();
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-stt-'));
-  const wavPath = path.join(tmpDir, 'input.wav');
-  const outBase = path.join(tmpDir, 'out');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-stt-'));
   try {
-    await writeInt16PcmAsWav(pcm, wavPath);
-    await runWhisper(binary, ['-m', model, '-f', wavPath, '-otxt', '-of', outBase, '-nt'], signal);
-    const text = await fs.readFile(`${outBase}.txt`, 'utf8');
-    return text.trim();
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
-}
-
-function runWhisper(binary: string, args: string[], signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, { signal, windowsHide: true, timeout: 120_000 });
-    let stderr = '';
-    child.stderr.on('data', (b: Buffer) => (stderr += b.toString()));
-    child.on('error', (e) => reject(new MiraError('stt_failed', `whisper spawn: ${e.message}`)));
-    child.on('close', (code) => {
-      if (code === 0) return resolve();
-      reject(new MiraError('stt_failed', `whisper exited ${code}: ${stderr.trim().slice(0, 400)}`));
+    const wav = path.join(directory, 'input.wav');
+    const output = path.join(directory, 'out');
+    await writeInt16PcmAsWav(pcm, wav);
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(binary, ['-m', modelPath(), '-f', wav, '-otxt', '-of', output, '-nt', '-l', 'en', '-t', '4'], {
+        signal, windowsHide: true, timeout: 120_000,
+      });
+      let failed = false;
+      child.stdout.resume();
+      child.stderr.resume();
+      child.on('error', () => { failed = true; });
+      child.on('close', (code) => {
+        if (signal?.aborted) reject(signal.reason);
+        else if (!failed && code === 0) resolve();
+        else reject(new MiraError('stt_failed', 'Speech processing failed or timed out. Try a shorter recording.'));
+      });
     });
-  });
+    signal?.throwIfAborted();
+    return (await fs.readFile(`${output}.txt`, 'utf8')).trim();
+  } finally { await fs.rm(directory, { recursive: true, force: true }); }
 }
 
-export async function modelStatus(): Promise<{ present: boolean; path: string; sha256: string }> {
-  return { present: await fileExists(modelPath()), path: modelPath(), sha256: DEFAULT_MODEL.sha256 };
+export async function modelStatus() {
+  return {
+    present: await validModel(), path: modelPath(), sha256: MODEL.sha256,
+    runtimeAvailable: await findWhisperBinary().then(() => true, () => false),
+    downloading: downloadController !== null,
+  };
 }
 
 export async function downloadModel(onProgress?: DownloadProgress): Promise<string> {
-  return ensureModel(onProgress);
+  if (onProgress) progressListeners.add(onProgress);
+  try { return await ensureModel(); }
+  finally { if (onProgress) progressListeners.delete(onProgress); }
 }
 
-async function fileExists(p: string): Promise<boolean> {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
+export function cancelModelDownload(): void { downloadController?.abort(); }

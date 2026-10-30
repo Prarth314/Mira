@@ -88,7 +88,8 @@ declare global {
         read: () => Promise<{ ok: true; data: Telemetry } | { ok: false; error: { kind: string; message: string } }>;
       };
       model: {
-        status: () => Promise<{ present: boolean; path: string; sha256: string }>;
+        status: () => Promise<{ present: boolean; path: string; sha256: string; runtimeAvailable: boolean; downloading: boolean }>;
+        cancel: () => Promise<{ ok: boolean }>;
         download: () => Promise<{ ok: true; path: string } | { ok: false; error: { kind: string; message: string } }>;
         onProgress: (cb: (data: { downloaded: number; total: number }) => void) => () => void;
       };
