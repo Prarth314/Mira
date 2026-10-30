@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-a78bfa.svg)](LICENSE)
 ![Status: development](https://img.shields.io/badge/Status-development-67e8f9)
 
-**A voice workspace for developers.**  
+**A voice workspace for developers.**
 Speak your intent. Preserve the details. Stay in your flow.
 
 [Get started](#get-started) · [Architecture](#architecture) · [Roadmap](docs/production-roadmap.md) · [Contribute](CONTRIBUTING.md)

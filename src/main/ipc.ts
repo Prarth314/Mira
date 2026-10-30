@@ -176,7 +176,7 @@ export function registerIpc(): void {
       if (pcm.length === 0) {
         return { ok: false, error: { kind: 'stt_failed', message: 'empty audio buffer' } };
       }
-      let transcript = '';
+      let transcript: string;
       try {
         transcript = await transcribePcm(pcm);
       } catch (e) {

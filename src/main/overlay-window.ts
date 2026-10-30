@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import path from 'node:path';
 
 const WIDTH = 460;
@@ -10,7 +10,7 @@ let overlay: BrowserWindow | null = null;
 function urlOrFile(): string | { file: string } {
   const isDev = process.env.NODE_ENV === 'development';
   if (isDev) return 'http://localhost:5173/overlay.html';
-  return { file: path.join(__dirname, '..', '..', 'dist', 'overlay.html') };
+  return { file: path.join(app.getAppPath(), 'dist', 'overlay.html') };
 }
 
 function repositionToScreenCenter(win: BrowserWindow): void {
@@ -44,7 +44,7 @@ export function getOrCreateOverlay(): BrowserWindow {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, '..', '..', 'preload.js'),
+      preload: path.join(app.getAppPath(), 'dist-electron', 'preload.cjs'),
       backgroundThrottling: false,
     },
   });

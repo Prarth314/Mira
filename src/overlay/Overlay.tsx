@@ -162,7 +162,6 @@ const Overlay: React.FC = () => {
       offToggle?.();
       offHide?.();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   // No in-window keyboard listener: the overlay window is non-focusable

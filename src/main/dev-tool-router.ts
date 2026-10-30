@@ -87,7 +87,7 @@ export async function routeDevPrompt(
   const target = classifyApp(app);
 
   // Save and write to clipboard
-  const previous = clipboard.readText();
+  const previous = await clipboard.readText();
   clipboard.writeText(prompt);
   // Brief delay to let clipboard settle (keystroke before clipboard sync = mojibake)
   await new Promise((r) => setTimeout(r, 60));

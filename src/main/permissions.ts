@@ -14,7 +14,7 @@ export async function probePermissions(): Promise<PermissionsReport> {
   }
   const mic = (systemPreferences.getMediaAccessStatus('microphone') ?? 'unknown') as PermissionState;
   // Screen recording: probe by attempting to enumerate sources. Empty list = denied/not-granted.
-  let screen: PermissionState = 'unknown';
+  let screen: PermissionState;
   try {
     const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 } });
     screen = sources.length > 0 ? 'granted' : 'denied';

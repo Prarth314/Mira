@@ -101,7 +101,7 @@ export class OpenAIProvider implements Provider {
         tc.type === 'function',
       )
       .map((tc) => {
-        let parsed: Record<string, unknown> = {};
+        let parsed: Record<string, unknown>;
         try {
           parsed = JSON.parse(tc.function.arguments) as Record<string, unknown>;
         } catch (e) {

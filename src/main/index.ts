@@ -1,7 +1,7 @@
 import { app, BrowserWindow, session, desktopCapturer, ipcMain, globalShortcut } from 'electron';
 import path from 'node:path';
 import { registerIpc } from './ipc';
-import { hideOverlay, toggleOverlay, destroyOverlay } from './overlay-window';
+import { toggleOverlay, destroyOverlay } from './overlay-window';
 
 const isDev = process.env.NODE_ENV === 'development';
 const DEV_URL = 'http://localhost:5173';
@@ -29,7 +29,7 @@ function createMainWindow(): BrowserWindow {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, '..', '..', 'preload.js'),
+      preload: path.join(app.getAppPath(), 'dist-electron', 'preload.cjs'),
     },
   });
 
@@ -37,7 +37,7 @@ function createMainWindow(): BrowserWindow {
     void win.loadURL(DEV_URL);
     win.webContents.openDevTools({ mode: 'detach' });
   } else {
-    void win.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
+    void win.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
   }
 
   win.on('close', (event) => {
