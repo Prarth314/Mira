@@ -13,6 +13,7 @@ import { MiraError } from '../types/MiraError';
 import type { Destination, Draft, StudioState, VoiceMode } from '../types/studio';
 import { selectedContext, contextUnchanged } from './project';
 import { formatPrompt } from './project-index';
+import { refinementLosses } from './refinement-policy';
 
 const sessions = new SessionCoordinator();
 let state: StudioState = { phase: 'idle', sessionId: null, draft: null, error: null };
@@ -57,6 +58,10 @@ async function prepare(original: string, session: VoiceSession): Promise<void> {
         signal: AbortSignal.any([session.controller.signal, AbortSignal.timeout(60_000)]),
       });
       prompt = text(response.text, 'Refined prompt');
+      if (refinementLosses(original, prompt).length) {
+        prompt = original;
+        error = 'The proposed refinement may have changed technical details or constraints. Your original instruction was retained.';
+      }
     } catch {
       session.controller.signal.throwIfAborted();
       error = 'Refinement was unavailable. Your original instruction is preserved; check Settings or use dictation.';

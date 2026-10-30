@@ -25,6 +25,15 @@ Your best explanation of a coding task should not disappear between your microph
 
 **Speak → transcribe → inspect → deliver.**
 
+<details>
+<summary>View the desktop workspace</summary>
+
+![Mira's dark voice workspace with capture, editable prompt review, project context and local model setup](docs/assets/workspace.png)
+
+Actual development build. Example instruction uses synthetic test content.
+
+</details>
+
 | Capability | Direction |
 | --- | --- |
 | Local speech | Whisper transcription on your device |

@@ -1,163 +1,65 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { KeyRound, ShieldCheck, X } from 'lucide-react';
 import type { ProviderName } from '../src/types/provider';
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-};
-
-const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
-  const [keyStatus, setKeyStatus] = useState<Record<ProviderName, boolean> | null>(null);
+export default function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [keys, setKeys] = useState<Record<ProviderName, boolean>>({ anthropic: false, openai: false });
   const [provider, setProvider] = useState<ProviderName>('anthropic');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [anthropicKey, setAnthropicKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (!open || !window.mira) return;
-    void window.mira.keys.status().then(setKeyStatus);
-    void window.mira.provider.get().then(({ name }) => setProvider(name));
-    void window.mira.settings.get().then((s) => {
-
-      setShowAdvanced(s.showAdvancedProviders);
-    });
+    if (!open) return;
+    const modal = dialog.current;
+    modal?.showModal();
+    let current = true;
+    void (async () => {
+      try {
+        if (!window.mira) throw new Error('Open the desktop app to change settings.');
+        const [status, settings] = await Promise.all([window.mira.keys.status(), window.mira.settings.get()]);
+        if (current) { setKeys(status); setProvider(settings.defaultProvider); }
+      } catch { if (current) setMessage('Could not load settings. Secure storage or preferences may be unavailable.'); }
+    })();
+    return () => { current = false; modal?.close(); setAnthropicKey(''); setOpenaiKey(''); setMessage(''); };
   }, [open]);
 
-  if (!open) return null;
-
+  async function saveKey(name: ProviderName, key: string) {
+    const result = await window.mira!.keys.save(name, key);
+    if (!result.ok) throw new Error(result.error?.message ?? 'Could not update secure storage.');
+  }
+  async function perform(action: () => Promise<void>) {
+    setBusy(true); setMessage('');
+    try { await action(); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save settings.'); }
+    finally { setBusy(false); }
+  }
   async function save() {
     if (!window.mira) return;
-    setBusy(true);
-    setMsg(null);
-    try {
-      if (anthropicKey.trim()) {
-        const result = await window.mira.keys.save('anthropic', anthropicKey.trim());
-        if (!result.ok) throw new Error(result.error?.message ?? 'Could not save Anthropic key');
-      }
-      if (openaiKey.trim()) {
-        const result = await window.mira.keys.save('openai', openaiKey.trim());
-        if (!result.ok) throw new Error(result.error?.message ?? 'Could not save OpenAI key');
-      }
-      await window.mira.provider.set(provider);
-      await window.mira.settings.update({
-        defaultProvider: provider,
-        autoSend: false,
-        showAdvancedProviders: showAdvanced,
-      });
-      const status = await window.mira.keys.status();
-      setKeyStatus(status);
-      setAnthropicKey('');
-      setOpenaiKey('');
-      setMsg('Saved. Provider processing is optional; dictation stays local.');
-    } catch (e) {
-      setMsg(`Error: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setBusy(false);
-    }
+    if (anthropicKey.trim()) await saveKey('anthropic', anthropicKey.trim());
+    if (openaiKey.trim()) await saveKey('openai', openaiKey.trim());
+    await window.mira.settings.update({ defaultProvider: provider, autoSend: false });
+    setKeys(await window.mira.keys.status());
+    setAnthropicKey(''); setOpenaiKey('');
+    setMessage('Saved. Local dictation remains available without a provider key.');
   }
-
-  async function switchProvider(name: ProviderName) {
-    setProvider(name);
-
+  async function remove(name: ProviderName) {
+    await saveKey(name, '');
+    setKeys(await window.mira!.keys.status());
+    setMessage(`${name === 'anthropic' ? 'Anthropic' : 'OpenAI'} key removed from secure storage.`);
   }
+  if (!open) return null;
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-zinc-900 border border-white/10 rounded-2xl w-[480px] max-w-[92vw] p-6 space-y-5 shadow-2xl"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-100">Settings</h2>
-          <button
-            onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-200 text-xs px-2 py-1 rounded"
-          >
-            Close
-          </button>
-        </div>
-
-        <Field label="Anthropic API key (Claude — recommended for code)">
-          <input
-            type="password"
-            value={anthropicKey}
-            onChange={(e) => setAnthropicKey(e.target.value)}
-            placeholder={keyStatus?.anthropic ? 'saved (paste to replace)' : 'sk-ant-...'}
-            className="w-full bg-zinc-950/60 border border-white/10 rounded-lg px-3 py-2 text-[13px] font-mono text-zinc-200 focus:border-blue-400/40 focus:outline-none"
-          />
-        </Field>
-
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-[11px] text-zinc-500 hover:text-zinc-300"
-        >
-          {showAdvanced ? '▾ Advanced' : '▸ Advanced'}
-        </button>
-
-        {showAdvanced && (
-          <div className="space-y-4 border-l border-white/5 pl-4">
-            <Field label="Active provider">
-              <div className="grid grid-cols-2 gap-2">
-                {(['anthropic', 'openai'] as ProviderName[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => switchProvider(p)}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium transition ${
-                      provider === p
-                        ? 'bg-blue-500/15 border border-blue-400/40 text-blue-200'
-                        : 'bg-zinc-950/40 border border-white/5 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    {p === 'anthropic' ? 'Claude (Anthropic)' : 'GPT (OpenAI)'}
-                    {keyStatus?.[p] ? ' • set' : ''}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[11px] text-zinc-500 mt-2">
-                Switching providers clears the current chat history.
-              </p>
-            </Field>
-
-            <Field label={`OpenAI API key${keyStatus?.openai ? ' (saved)' : ''}`}>
-              <input
-                type="password"
-                value={openaiKey}
-                onChange={(e) => setOpenaiKey(e.target.value)}
-                placeholder="sk-..."
-                className="w-full bg-zinc-950/60 border border-white/10 rounded-lg px-3 py-2 text-[13px] font-mono text-zinc-200 focus:border-blue-400/40 focus:outline-none"
-              />
-            </Field>
-          </div>
-        )}
-
-        {msg && <div className="text-xs text-blue-300">{msg}</div>}
-
-        <button
-          onClick={save}
-          disabled={busy}
-          className="w-full py-2.5 bg-blue-500/20 border border-blue-400/40 text-blue-100 rounded-lg text-[13px] font-medium hover:bg-blue-500/30 transition disabled:opacity-50"
-        >
-          {busy ? 'Saving…' : 'Save'}
-        </button>
-
-        <p className="text-[11px] text-zinc-500 text-center">
-          Keys use OS-backed encrypted storage. Refine mode sends your instruction to the selected provider.
-        </p>
-      </div>
-    </div>
-  );
-};
-
-const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="space-y-1.5">
-    <label className="text-[11px] font-medium text-zinc-400">{label}</label>
-    {children}
-  </div>
-);
-
-export default SettingsPanel;
+  return <dialog ref={dialog} className="settings-dialog" aria-labelledby="settings-title" onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }}>
+    <div className="settings-heading"><div><div className="eyebrow">MAKE IT YOURS</div><h2 id="settings-title">Workspace settings</h2></div><button aria-label="Close settings" className="icon-button" disabled={busy} onClick={onClose}><X size={18} /></button></div>
+    <p className="settings-description">Dictation stays local. Refinement sends only your instruction to the provider you choose. Attached project files are not sent for refinement.</p>
+    <label htmlFor="provider" className="settings-label">Refinement provider</label><select id="provider" value={provider} onChange={(event) => setProvider(event.target.value as ProviderName)} disabled={busy}><option value="anthropic">Claude · Anthropic</option><option value="openai">GPT · OpenAI</option></select>
+    <div className="settings-field"><label htmlFor="anthropic-key" className="settings-label"><KeyRound size={13} /> Anthropic API key {keys.anthropic && <span>Saved</span>}</label><input id="anthropic-key" type="password" autoComplete="off" spellCheck={false} value={anthropicKey} onChange={(event) => setAnthropicKey(event.target.value)} placeholder={keys.anthropic ? 'Paste a key to replace the saved key' : 'sk-ant-…'} disabled={busy} />{keys.anthropic && <button className="text-button" disabled={busy} onClick={() => { void perform(() => remove('anthropic')); }}>Remove Anthropic key</button>}</div>
+    <div className="settings-field"><label htmlFor="openai-key" className="settings-label"><KeyRound size={13} /> OpenAI API key {keys.openai && <span>Saved</span>}</label><input id="openai-key" type="password" autoComplete="off" spellCheck={false} value={openaiKey} onChange={(event) => setOpenaiKey(event.target.value)} placeholder={keys.openai ? 'Paste a key to replace the saved key' : 'sk-…'} disabled={busy} />{keys.openai && <button className="text-button" disabled={busy} onClick={() => { void perform(() => remove('openai')); }}>Remove OpenAI key</button>}</div>
+    <div className="settings-privacy"><ShieldCheck size={17} /><p>Keys use OS-backed encrypted storage. Drafts and project indexes stay in memory. No transcript history is written to disk.</p></div>
+    <p role="status" className="settings-message">{message}</p>
+    <button className="primary-button settings-save" disabled={busy || !window.mira} onClick={() => { void perform(save); }}>{busy ? 'Saving…' : 'Save'}</button>
+  </dialog>;
+}

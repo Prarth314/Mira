@@ -11,15 +11,16 @@ export function useStudio() {
   const [starting, setStarting] = useState(false);
   const owner = useRef<string | null>(null);
   const startingRef = useRef(false);
-  const finishingRef = useRef(false);
+  const finishingRef = useRef<string | null>(null);
   const generation = useRef(0);
-  const capture = useRef<{ stream: MediaStream; context: AudioContext; node: AudioWorkletNode } | null>(null);
+  const capture = useRef<{ id: string; stream: MediaStream; context: AudioContext; node: AudioWorkletNode } | null>(null);
   const pending = useRef<Promise<void>>(Promise.resolve());
   const chunkError = useRef<Error | null>(null);
   const flushDone = useRef<(() => void) | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const cleanup = useCallback(() => {
+  const cleanup = useCallback((id?: string) => {
+    if (id && capture.current?.id !== id) return;
     if (timer.current) clearTimeout(timer.current);
     const current = capture.current;
     capture.current = null;
@@ -40,8 +41,8 @@ export function useStudio() {
 
   const finish = useCallback(async () => {
     const id = owner.current;
-    if (!id || !api || !capture.current || finishingRef.current) return;
-    finishingRef.current = true;
+    if (!id || !api || !capture.current || finishingRef.current === id) return;
+    finishingRef.current = id;
     const current = capture.current;
     try {
       await new Promise<void>((resolve, reject) => {
@@ -49,7 +50,7 @@ export function useStudio() {
         flushDone.current = () => { clearTimeout(timeout); resolve(); };
         current.node.port.postMessage('flush');
       });
-      cleanup();
+      cleanup(id);
       await pending.current;
       if (chunkError.current) throw chunkError.current;
       if (owner.current !== id) return;
@@ -58,8 +59,8 @@ export function useStudio() {
       if (owner.current === id) setError(e instanceof Error ? e.message : 'Could not finish recording');
       await api.cancel(id).catch(() => undefined);
     } finally {
-      cleanup();
-      finishingRef.current = false;
+      cleanup(id);
+      if (finishingRef.current === id) finishingRef.current = null;
       if (owner.current === id) owner.current = null;
     }
   }, [api, cleanup]);
@@ -87,11 +88,12 @@ export function useStudio() {
       catch (e) { stream.getTracks().forEach((track) => track.stop()); await context.close(); throw e; }
       const node = new AudioWorkletNode(context, 'mira-pcm');
       if (token !== generation.current) { stream.getTracks().forEach((track) => track.stop()); await context.close(); return; }
-      capture.current = { stream, context, node };
+      capture.current = { id, stream, context, node };
       pending.current = Promise.resolve();
       chunkError.current = null;
       let queued = 0;
       const failCapture = (message: string) => {
+        if (owner.current !== id) return;
         chunkError.current = new Error(message);
         setError(message);
         void cancel();
