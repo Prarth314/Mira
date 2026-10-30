@@ -32,6 +32,8 @@ Automated synthetic microphone tests and the public Whisper sample are smoke tes
 
 Keep a held-out, consented corpus separate from examples used during development. Measure technical-token preservation, meaning, error rate, transcription/refinement/delivery latency, idle CPU, peak memory and battery impact. Report sample size and hardware. Do not report a percentage from a single public sample as general accuracy.
 
+The opt-in speech test writes `test-results/speech-benchmark.json`. A recorded Windows run is saved in [benchmarks/windows-public-sample.json](benchmarks/windows-public-sample.json): 11 seconds of audio, 1,564 ms for model verification/transcription/draft preparation. Recording time, optional cloud refinement and external delivery are excluded. Model setup was measured separately. This is a smoke benchmark on one environment, not a latency guarantee.
+
 Opt-in public-sample transcription:
 
 ```powershell

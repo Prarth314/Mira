@@ -34,7 +34,9 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
   try {
     const page = await app.firstWindow();
     await page.waitForFunction(() => !!window.mira);
+    const downloadStart = performance.now();
     const result = await page.evaluate(async () => window.mira!.model.download());
+    const downloadMs = Math.round(performance.now() - downloadStart);
     expect(result.ok).toBe(true);
     const id = await page.evaluate(async () => (await window.mira!.studio.start('dictate')).id);
     for (let i = 0; i < pcm!.length; i += 8192) {
@@ -45,12 +47,33 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
         { id, bytes: [...pcm!.subarray(i, i + 8192)] },
       );
     }
+    const transcriptionStart = performance.now();
     await page.evaluate(async (id) => window.mira!.studio.finish(id), id);
+    const transcriptionMs = Math.round(performance.now() - transcriptionStart);
     const state = await page.evaluate(async () => window.mira!.studio.state());
     expect(state.error).toBeNull();
     expect(state.draft?.original.toLowerCase()).toContain('ask not what your country');
     expect(state.draft?.delivery).toBe('prepared');
     expect(state.phase).toBe('idle');
+    const environment = await page.evaluate(async () => window.mira!.diagnostics.get());
+    await fs.mkdir('test-results', { recursive: true });
+    await fs.writeFile(
+      'test-results/speech-benchmark.json',
+      JSON.stringify(
+        {
+          dataset: 'Upstream JFK public sample; one recording, not a general accuracy evaluation',
+          sampleCount: 1,
+          audioSeconds: pcm!.length / 32000,
+          modelSetupMs: downloadMs,
+          transcriptionMs,
+          transcriptionRealTimeFactor: transcriptionMs / (pcm!.length / 32),
+          result: 'Expected public-sample phrase recognized; draft remained unsubmitted',
+          environment,
+        },
+        null,
+        2,
+      ),
+    );
   } finally {
     await app.close();
     await fs.rm(profile, { recursive: true, force: true });

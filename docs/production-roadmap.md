@@ -48,9 +48,13 @@ Record the exact commit, OS/app versions, hardware, sample size, failure definit
 - Trusted core: registered-window/top-frame IPC checks, role restrictions, bounded inputs, microphone-only permission handling, navigation restrictions, atomic serialized settings/key writes.
 - Voice workspace: owned recording sessions, AudioWorklet capture, cancellable processing, optional cloud refinement, editable draft review, manual copy, explicit attempted-delivery semantics and terminal control-character rejection.
 - Speech: pinned official runtime/source archives, resource manifest, pinned model revision/checksum, progress/cancellation, disk checks. Real English transcription through IPC passed with the upstream JFK sample on Windows.
-- Automated baseline: 71 unit tests passed, plus desktop preparation/copy/discard validation. These are engineering checks, not broad accuracy or native-app certification.
+- Automated baseline: 90 unit tests passed, plus desktop preparation/copy/discard, context, microphone cancellation, late permission and cold overlay validation. Automated WCAG checks cover the workspace and settings dialog; manual assistive-technology testing remains necessary.
 
 - Project context: opt-in folder selection, local filename indexing, Git-style ignore rules, explicit attachment previews, boundary checks, bounded content and stale-file checks. Unit and desktop tests verify selected source is copied and `.env` content is excluded.
 - CI: both Windows and macOS internal packaging jobs and desktop smoke tests passed for `5d2a636`.
+- Recovery: versioned preferences with legacy migration, explicit reset with backup, key removal, corruption-preserving failure handling and allowlisted diagnostic reports.
+- Packaging: branded Windows internal installer built locally; CI install/uninstall checks run only on disposable runners. Public signed distribution is not enabled.
+- Retention: temporary WAV files are confined to app-owned speech scratch directories, with abandoned-directory cleanup on startup. See [PRIVACY.md](../PRIVACY.md).
+- Performance: one public sample transcribed through the IPC pipeline; measured report and limitations are under [benchmarks](benchmarks/windows-public-sample.json).
 
 Remaining: direct editor integration, broader accessibility testing, observed native delivery matrix, performance evaluation corpus, signed installers, authenticated updates, public beta and user validation. Public stable release remains blocked on those acceptance gates and signing credentials.
