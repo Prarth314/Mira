@@ -116,7 +116,10 @@ export function useStudio() {
       source.connect(node);
       node.connect(context.destination);
       setAnalyser(meter);
-      await context.resume();
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Audio device did not start. Reconnect it or choose another system microphone.')), 5000);
+        void context.resume().then(() => { clearTimeout(timeout); resolve(); }, (error: unknown) => { clearTimeout(timeout); reject(error); });
+      });
       timer.current = setTimeout(() => { void finish(); }, 119_000);
     } catch (e) {
       cleanup();

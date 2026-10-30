@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 test('AudioWorklet captures fake microphone audio and cancellation permits another recording', async () => {
+  test.setTimeout(60_000);
   const profile = await mkdtemp(path.join(os.tmpdir(), 'mira-capture-'));
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === 'string'));
   delete env.ELECTRON_RUN_AS_NODE;
@@ -15,7 +16,7 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
   });
   try {
     const page = await app.firstWindow();
-    await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+    await test.step('open the recorder', async () => { await page.getByRole('button', { name: 'Start recording', exact: true }).click(); });
     await expect.poll(async () => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0)).toBeGreaterThan(200);
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect.poll(async () => page.evaluate(async () => (await window.mira!.studio.state()).phase)).toBe('idle');
@@ -26,7 +27,12 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
     await expect(page.getByRole('alert')).toContainText(/speech model|runtime unavailable/i);
     await expect(page.getByRole('button', { name: 'Start recording', exact: true })).toBeEnabled();
   } finally {
-    await app.close();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([app.close(), new Promise<void>((resolve) => {
+        timer = setTimeout(() => { if (app.process().exitCode === null) app.process().kill(); resolve(); }, 5000);
+      })]);
+    } finally { if (timer) clearTimeout(timer); }
     await rm(profile, { recursive: true, force: true });
   }
 });

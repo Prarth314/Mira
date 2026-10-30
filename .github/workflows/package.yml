@@ -28,9 +28,39 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run package:dir
+        if: runner.os != 'Windows'
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - run: npm run package
+        if: runner.os == 'Windows'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Start Windows audio backend for synthetic capture
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Start-Service Audiosrv
       - run: node scripts/smoke-packaged.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: package-failure-${{ matrix.os }}
+          path: test-results/
+      - name: Install and exercise Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -LiteralPath release -Filter '*Setup*.exe' | Select-Object -First 1
+          if (-not $installer) { throw 'Installer not found' }
+          $installPath = Join-Path $env:RUNNER_TEMP 'mira-install-test'
+          $result = Start-Process -FilePath $installer.FullName -ArgumentList '/S', "/D=$installPath" -Wait -PassThru -WindowStyle Hidden
+          if ($result.ExitCode -ne 0) { throw "Installation failed: $($result.ExitCode)" }
+          $env:MIRA_TEST_EXECUTABLE = Join-Path $installPath 'Mira.exe'
+          node scripts/smoke-packaged.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Installed application test failed' }
+          $uninstaller = Get-ChildItem -LiteralPath $installPath -Filter '*Uninstall*.exe' | Select-Object -First 1
+          if (-not $uninstaller) { throw 'Uninstaller not found' }
+          $result = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait -PassThru -WindowStyle Hidden
+          if ($result.ExitCode -ne 0) { throw "Uninstall failed: $($result.ExitCode)" }
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-internal-${{ matrix.os }}

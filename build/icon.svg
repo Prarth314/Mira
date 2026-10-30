@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#1d1931"/><stop offset="1" stop-color="#0b101b"/></linearGradient><linearGradient id="wave"><stop stop-color="#b39aff"/><stop offset="1" stop-color="#7de2e4"/></linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g stroke="url(#wave)" stroke-width="18" stroke-linecap="round"><path d="M128 220v72 M170 184v144 M212 146v220 M254 166v180 M296 132v248 M338 190v132 M380 226v60"/></g>
+</svg>
