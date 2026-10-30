@@ -98,13 +98,18 @@ if (!app.requestSingleInstanceLock()) {
       return { ok: true };
     });
     session.defaultSession.setPermissionCheckHandler(
-      (wc, permission) => !!wc && isTrustedUrl(wc.id, wc.getURL()) && permission === 'media',
+      (wc, permission, _origin, details) =>
+        !!wc &&
+        isTrustedUrl(wc.id, wc.getURL()) &&
+        permission === 'media' &&
+        details.mediaType === 'audio',
     );
     session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
       callback(
         isTrustedUrl(wc.id, wc.getURL()) &&
           permission === 'media' &&
           'mediaTypes' in details &&
+          (details.mediaTypes?.length ?? 0) > 0 &&
           details.mediaTypes?.every((type) => type === 'audio') === true,
       );
     });

@@ -15,7 +15,11 @@ test('production build opens with an isolated preload and settings bridge', asyn
   const executablePath = process.env.MIRA_TEST_EXECUTABLE;
   const app = await electron.launch({
     executablePath,
-    args: [...(executablePath ? [] : ['.']), `--user-data-dir=${profile}`],
+    args: [
+      ...(executablePath ? [] : ['.']),
+      `--user-data-dir=${profile}`,
+      '--use-fake-device-for-media-stream',
+    ],
     env,
   });
   try {
@@ -24,6 +28,17 @@ test('production build opens with an isolated preload and settings bridge', asyn
       BrowserWindow.getAllWindows()[0].setContentSize(1200, 1400),
     );
     await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
+    // Synthetic hardware only: unlike the capture test, permissions are NOT auto-granted.
+    const cameraDenied = await page.evaluate(async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach((track) => track.stop());
+        return false;
+      } catch {
+        return true;
+      }
+    });
+    expect(cameraDenied).toBe(true);
     const workspaceAccessibility = await new AxeBuilder({ page })
       .setLegacyMode()
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])

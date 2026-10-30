@@ -25,6 +25,7 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
   });
   try {
     const page = await app.firstWindow();
+    await page.waitForFunction(() => !!window.mira);
     await test.step('open the recorder', async () => {
       await page.getByRole('button', { name: 'Start recording', exact: true }).click();
     });
