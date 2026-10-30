@@ -61,8 +61,13 @@ jobs:
           if (-not $uninstaller) { throw 'Uninstaller not found' }
           $result = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait -PassThru -WindowStyle Hidden
           if ($result.ExitCode -ne 0) { throw "Uninstall failed: $($result.ExitCode)" }
+      - run: node scripts/archive-internal.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-internal-${{ matrix.os }}
-          path: release/
+          path: |
+            release/*Setup*.exe
+            release/*-internal.zip
+            release/SHA256SUMS.txt
+            release/internal-build.json
           retention-days: 7

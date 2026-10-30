@@ -4,6 +4,8 @@
 
 `npm run package` builds the native installer; `npm run package:dir` builds an unpacked application. Speech binaries are pinned and prepared as part of both commands. GitHub's **Desktop packages** workflow retains internal artifacts for seven days. These builds are unsigned and are not a public stable release.
 
+Download the artifact from a successful [Desktop packages run](https://github.com/Prarth314/Mira/actions/workflows/package.yml). Windows artifacts contain the installer; macOS artifacts contain an inner ZIP made with `ditto` so application permissions and bundle metadata survive artifact storage. Extract that ZIP before opening the app. Each artifact includes `SHA256SUMS.txt` and an unsigned build inventory. Checksums detect transfer corruption; they do not replace publisher signatures.
+
 Use disposable machines or CI for install/uninstall exercises. Never uninstall an existing user's app as part of a smoke test. The Windows CI job installs into a dedicated runner-temp directory and exercises that executable before invoking its own uninstaller.
 
 ## Record the environment
