@@ -50,4 +50,7 @@ Record the exact commit, OS/app versions, hardware, sample size, failure definit
 - Speech: pinned official runtime/source archives, resource manifest, pinned model revision/checksum, progress/cancellation, disk checks. Real English transcription through IPC passed with the upstream JFK sample on Windows.
 - Automated baseline: 71 unit tests passed, plus desktop preparation/copy/discard validation. These are engineering checks, not broad accuracy or native-app certification.
 
-Remaining: scoped project context, direct editor integration, broader accessibility testing, observed native delivery matrix, performance evaluation corpus, signed installers, authenticated updates, public beta and user validation. Public stable release remains blocked on those acceptance gates and signing credentials.
+- Project context: opt-in folder selection, local filename indexing, Git-style ignore rules, explicit attachment previews, boundary checks, bounded content and stale-file checks. Unit and desktop tests verify selected source is copied and `.env` content is excluded.
+- CI: both Windows and macOS internal packaging jobs and desktop smoke tests passed for `5d2a636`.
+
+Remaining: direct editor integration, broader accessibility testing, observed native delivery matrix, performance evaluation corpus, signed installers, authenticated updates, public beta and user validation. Public stable release remains blocked on those acceptance gates and signing credentials.

@@ -1,5 +1,5 @@
 import { test, expect, _electron as electron } from '@playwright/test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -39,6 +39,23 @@ test('production build opens with an isolated preload and settings bridge', asyn
     expect(invalidProviderRejected).toBe(true);
     await page.getByRole('button', { name: 'Discard draft' }).click();
     await expect(page.getByLabel('Prepared prompt')).toHaveCount(0);
+    const project = path.join(profile, 'project');
+    await mkdir(project);
+    await writeFile(path.join(project, 'auth.ts'), 'export const sessionTTL = 300;');
+    await writeFile(path.join(project, '.env'), 'PRIVATE=do-not-share');
+    await app.evaluate(({ dialog }, folder) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] });
+    }, project);
+    await page.getByRole('button', { name: 'Connect project' }).click();
+    await page.getByText('Choose files to attach').click();
+    await page.getByRole('checkbox', { name: 'auth.ts' }).click();
+    await expect(page.getByRole('checkbox', { name: 'auth.ts' })).toBeChecked();
+    await page.getByRole('button', { name: 'Prepare instruction' }).click();
+    await expect(page.getByText('Attached context · 1 files')).toBeVisible();
+    await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+    const contextualCopy = await app.evaluate(async ({ clipboard }) => clipboard.readText());
+    expect(contextualCopy).toContain('export const sessionTTL = 300;');
+    expect(contextualCopy).not.toContain('PRIVATE=');
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
   } finally {

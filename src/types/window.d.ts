@@ -1,6 +1,6 @@
 import type { ProviderName, ChatResponse } from './provider';
 import type { Action } from './actions';
-import type { StudioApi } from './studio';
+import type { StudioApi, ContextAttachment } from './studio';
 
 export type ActuatorResult =
   | { ok: true; message: string }
@@ -50,6 +50,13 @@ declare global {
     };
     mira?: {
       studio: StudioApi;
+      project: {
+        status: () => Promise<{ project: { name: string; count: number } | null; selected: ContextAttachment[] }>;
+        connect: () => Promise<{ project: { name: string; count: number } | null; selected: ContextAttachment[] }>;
+        search: (query: string) => Promise<string[]>;
+        select: (paths: string[]) => Promise<ContextAttachment[]>;
+        disconnect: () => Promise<void>;
+      };
       window: {
         show: () => Promise<{ ok: boolean }>;
         hide: () => Promise<{ ok: boolean }>;

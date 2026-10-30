@@ -11,6 +11,8 @@ import { getKey } from './keystore';
 import { createProvider } from '../providers';
 import { MiraError } from '../types/MiraError';
 import type { Destination, Draft, StudioState, VoiceMode } from '../types/studio';
+import { selectedContext, contextUnchanged } from './project';
+import { formatPrompt } from './project-index';
 
 const sessions = new SessionCoordinator();
 let state: StudioState = { phase: 'idle', sessionId: null, draft: null, error: null };
@@ -39,6 +41,7 @@ function requireDraft(id: unknown): Draft {
 async function prepare(original: string, session: VoiceSession): Promise<void> {
   const currentMode = mode;
   const currentDestination = destination;
+  const context = selectedContext();
   let prompt = original;
   let error: string | null = null;
   if (currentMode === 'refine') {
@@ -62,7 +65,7 @@ async function prepare(original: string, session: VoiceSession): Promise<void> {
   sessions.require(session.owner, session.id);
   publish({
     draft: { id: randomUUID(), original, prompt, mode: currentMode, destination: currentDestination,
-      createdAt: new Date().toISOString(), delivery: 'prepared' }, error,
+      createdAt: new Date().toISOString(), delivery: 'prepared', context }, error,
   });
 }
 
@@ -137,7 +140,8 @@ export function registerStudio(): void {
     const draft = requireDraft(id);
     publish({ phase: 'delivering' });
     try {
-      await clipboard.writeText(draft.prompt);
+      if (draft.context?.length && !await contextUnchanged(draft.context)) throw new MiraError('action_invalid', 'Attached context changed. Reattach files and prepare a new draft.');
+      await clipboard.writeText(formatPrompt(draft.prompt, draft.context));
       publish({ draft: { ...draft, delivery: attempted.has(draft.id) ? 'attempted' : 'copied' } });
     } finally { publish({ phase: 'idle' }); }
   }, ['workspace']);
@@ -149,7 +153,8 @@ export function registerStudio(): void {
     if (attempted.size > 100) attempted.delete(attempted.values().next().value!);
     publish({ phase: 'delivering', draft: { ...draft, delivery: 'attempted', error: undefined } });
     try {
-      await routeDevPrompt(draft.prompt, { destination: draft.destination });
+      if (draft.context?.length && !await contextUnchanged(draft.context)) throw new MiraError('action_invalid', 'Attached context changed');
+      await routeDevPrompt(formatPrompt(draft.prompt, draft.context), { destination: draft.destination });
     } catch {
       publish({ draft: { ...draft, delivery: 'attempted', error: 'Delivery could not be verified. Check your destination before manually pasting; Mira will not retry.' } });
     } finally { publish({ phase: 'idle' }); }

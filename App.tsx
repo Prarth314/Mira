@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, AudioLines, Check, Copy, Keyboard, Loader2, Mic, Settings, ShieldCheck, Sparkles, Square, Trash2, X } from 'lucide-react';
 import SettingsPanel from './components/SettingsPanel';
+import ProjectPanel from './components/ProjectPanel';
 import AudioVisualizer from './components/AudioVisualizer';
 import { useStudio } from './hooks/useStudio';
 import type { VoiceMode } from './src/types/studio';
@@ -69,6 +70,7 @@ const App: React.FC = () => {
           <div className="intro"><div className="eyebrow">A LITTLE LESS TYPING. A LITTLE MORE FLOW.</div><h1>Think it. <span>Speak it.</span><br />Keep building.</h1><p>A clear path from your next idea to your next instruction.</p></div>
           {!api && <div role="alert" className="notice">Open Mira in the desktop application to record and prepare prompts.</div>}
           {(studio.error || state.error) && <div role="alert" className="notice">{studio.error || state.error}</div>}
+          <ProjectPanel disabled={active || busy} onError={studio.setError} />
           <div className="studio-grid">
             <section className="surface capture-card" aria-label="Capture an instruction">
               <div className="card-heading"><span className="eyebrow">01 / CAPTURE</span><span className="subtle-pill">{mode === 'dictate' ? 'On device' : 'Cloud refinement'}</span></div>
@@ -96,6 +98,7 @@ const App: React.FC = () => {
                 <div className="destination"><span className="status-dot" /><div><strong>{draft.destination?.name ?? 'Manual delivery'}</strong><p>{draft.destination ? 'Captured when recording started. Paste targets the focused input.' : 'Copy your prompt into the tool of your choice.'}</p></div></div>
                 <label className="sr-only" htmlFor="review">Prepared prompt</label><textarea id="review" className="review-editor" value={review} onChange={(event) => setReview(event.target.value)} maxLength={16000} disabled={active || busy} />
                 {draft.mode === 'refine' && <details className="original-transcript"><summary>View original instruction</summary><p>{draft.original}</p></details>}
+                {!!draft.context?.length && <details className="original-transcript"><summary>Attached context · {draft.context.length} files</summary>{draft.context.map((file) => <details key={file.path}><summary>{file.path}</summary><pre style={{whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto'}}>{file.content}</pre></details>)}</details>}
                 <p className="delivery-note" aria-live="polite">{draft.error ?? (draft.delivery === 'attempted' ? 'Paste attempted. Check the destination; automatic receipt cannot be verified.' : draft.delivery === 'copied' ? 'Copied. Paste it wherever you are working.' : 'Nothing is sent until you choose an action.')}</p>
                 <div className="review-actions"><button className="secondary-button" disabled={!review.trim() || active || busy} onClick={() => { void perform(() => saveAnd('copy')); }}><Copy size={15} /> Copy prompt</button>{draft.destination && <button className="primary-button" disabled={!review.trim() || active || busy || draft.delivery === 'attempted'} onClick={() => { void perform(() => saveAnd('deliver')); }}><ArrowUpRight size={15} /> Paste to {draft.destination.name}</button>}<button className="icon-button" aria-label="Discard draft" disabled={active || busy} onClick={() => { void perform(() => api!.studio.discard(draft.id)); }}><Trash2 size={16} /></button></div>
               </> : <div className="empty-review"><div className="empty-icon"><Sparkles size={28} /></div><h2>Your next instruction<br />starts with a thought.</h2><p>Capture it on the left. Review it here.<br />Send it when it feels right.</p><div className="empty-check"><Check size={14} /> You choose what leaves this workspace.</div></div>}

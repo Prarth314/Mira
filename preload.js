@@ -25,4 +25,11 @@ contextBridge.exposeInMainWorld('mira', {
     deliver: (id) => ipcRenderer.invoke('mira:studio:deliver', id),
     discard: (id) => ipcRenderer.invoke('mira:studio:discard', id),
   },
+  project: {
+    status: () => ipcRenderer.invoke('mira:project:status'),
+    connect: () => ipcRenderer.invoke('mira:project:connect'),
+    search: (query) => ipcRenderer.invoke('mira:project:search', query),
+    select: (paths) => ipcRenderer.invoke('mira:project:select', { paths }),
+    disconnect: () => ipcRenderer.invoke('mira:project:disconnect'),
+  },
 });

@@ -30,7 +30,7 @@ Your best explanation of a coding task should not disappear between your microph
 | Local speech | Whisper transcription on your device |
 | Your provider | Optional Anthropic or OpenAI processing with your own key |
 | Deliberate delivery | Clear destination, review, cancellation and copy fallback |
-| Developer context | Planned opt-in project vocabulary and visible context attachments |
+| Developer context | Opt-in local filename index and previewable file attachments |
 | Desktop presence | A compact overlay with a full workspace when you need it |
 
 Native adapters exist for Windows and macOS. Keyboard delivery is reported as **attempted**, because simulated input cannot confirm receipt. Typed drafts use manual delivery; shortcut recordings capture a supported destination. Native-tool certification remains a beta gate. See the [execution tracker](docs/production-roadmap.md).
@@ -92,6 +92,7 @@ The renderer does not own provider credentials. Desktop input and provider outpu
 - Optional cloud processing sends its input to the selected provider.
 - Never put API keys or private transcripts into issue reports.
 - Drafts remain in memory; raw transcript history is not persisted.
+- Connect a folder and explicitly select up to three files to attach to a draft. Common credential files, hidden paths, symlinks and ignored files are excluded. Refinement processes only the instruction; selected context is shared when you copy or paste.
 - Project context, screenshot controls, retention and diagnostic redaction are tracked as explicit release requirements.
 
 Read [SECURITY.md](SECURITY.md) before reporting a sensitive issue.

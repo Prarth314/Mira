@@ -7,9 +7,11 @@ import { downloadModel, modelStatus, cancelModelDownload } from './stt';
 import { probePermissions, requestMicrophone, openSettingsForMicrophone } from './permissions';
 import { registerStudio } from './studio';
 import { hideOverlay } from './overlay-window';
+import { registerProject } from './project';
 
 export function registerIpc(): void {
   registerStudio();
+  registerProject();
   handle('mira:overlay:hide', () => { hideOverlay(); return { ok: true }; });
   handle('mira:keys:status', () => status());
   handle('mira:keys:save', async (_event, payload: unknown) => {

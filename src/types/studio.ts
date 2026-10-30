@@ -1,4 +1,5 @@
 export type VoiceMode = 'dictate' | 'refine';
+export type ContextAttachment = { path: string; content: string; sha256: string };
 export type Destination = {
   name: string;
   bundleId: string | null;
@@ -14,6 +15,7 @@ export type Draft = {
   createdAt: string;
   delivery: 'prepared' | 'attempted' | 'copied' | 'failed';
   error?: string;
+  context?: ContextAttachment[];
 };
 export type StudioState = {
   phase: 'idle' | 'recording' | 'transcribing' | 'refining' | 'delivering';
