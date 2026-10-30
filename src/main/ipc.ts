@@ -2,16 +2,18 @@ import { BrowserWindow } from 'electron';
 import { handle } from './security';
 import { record, text, providerName } from './validation';
 import { setKey, status } from './keystore';
-import { getSettings, updateSettings } from './settings';
+import { getSettings, updateSettings, resetPreferences } from './settings';
 import { downloadModel, modelStatus, cancelModelDownload } from './stt';
 import { probePermissions, requestMicrophone, openSettingsForMicrophone } from './permissions';
 import { registerStudio } from './studio';
 import { hideOverlay } from './overlay-window';
 import { registerProject } from './project';
+import { registerDiagnostics } from './diagnostics';
 
 export function registerIpc(): void {
   registerStudio();
   registerProject();
+  registerDiagnostics();
   handle('mira:overlay:hide', () => { hideOverlay(); return { ok: true }; });
   handle('mira:keys:status', () => status());
   handle('mira:keys:save', async (_event, payload: unknown) => {
@@ -29,6 +31,7 @@ export function registerIpc(): void {
   });
   handle('mira:settings:get', () => getSettings());
   handle('mira:settings:update', (_event, payload: unknown) => updateSettings(record(payload)));
+  handle('mira:settings:reset', () => resetPreferences(), ['workspace']);
   handle('mira:permissions:probe', () => probePermissions());
   handle('mira:permissions:requestMic', async () => ({ granted: await requestMicrophone() }));
   handle('mira:permissions:openSettings', (_event, payload: unknown) => {

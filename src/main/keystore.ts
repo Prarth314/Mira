@@ -4,10 +4,17 @@ import path from 'node:path';
 import type { ProviderName } from '../types/provider';
 import { MiraError } from '../types/MiraError';
 import { atomicWrite, serialQueue } from './atomic-file';
-import { providerName, text } from './validation';
+import { providerName, text, record } from './validation';
 
 type KeystoreFile = Partial<Record<ProviderName, string>>;
 const enqueue = serialQueue();
+
+function requireSecureStorage(): void {
+  if (!safeStorage.isEncryptionAvailable() ||
+    (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text')) {
+    throw new MiraError('permission_denied', 'OS-backed secure storage is not available. Dictation remains usable without keys.');
+  }
+}
 
 function keystorePath(): string {
   return path.join(app.getPath('userData'), 'keys.enc');
@@ -25,27 +32,20 @@ async function readEncrypted(): Promise<Buffer | null> {
 async function loadAll(): Promise<KeystoreFile> {
   const enc = await readEncrypted();
   if (!enc) return {};
-  if (!safeStorage.isEncryptionAvailable()) {
-    throw new MiraError(
-      'permission_denied',
-      'OS keychain (safeStorage) not available; cannot decrypt API keys',
-    );
-  }
+  requireSecureStorage();
   const json = safeStorage.decryptString(enc);
   try {
-    return JSON.parse(json) as KeystoreFile;
+    const input = record(JSON.parse(json));
+    const output: KeystoreFile = {};
+    for (const [name, key] of Object.entries(input)) output[providerName(name)] = text(key, 'Stored key', 4096);
+    return output;
   } catch {
-    return {};
+    throw new MiraError('permission_denied', 'Stored keys could not be read. Existing encrypted data was preserved.');
   }
 }
 
 async function writeAll(data: KeystoreFile): Promise<void> {
-  if (!safeStorage.isEncryptionAvailable()) {
-    throw new MiraError(
-      'permission_denied',
-      'OS keychain (safeStorage) not available; cannot encrypt API keys',
-    );
-  }
+  requireSecureStorage();
   const enc = safeStorage.encryptString(JSON.stringify(data));
   await atomicWrite(keystorePath(), enc);
 }

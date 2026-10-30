@@ -10,6 +10,7 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
   const [openaiKey, setOpenaiKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -23,7 +24,7 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
         if (current) { setKeys(status); setProvider(settings.defaultProvider); }
       } catch { if (current) setMessage('Could not load settings. Secure storage or preferences may be unavailable.'); }
     })();
-    return () => { current = false; modal?.close(); setAnthropicKey(''); setOpenaiKey(''); setMessage(''); };
+    return () => { current = false; modal?.close(); setAnthropicKey(''); setOpenaiKey(''); setMessage(''); setDiagnostics(null); };
   }, [open]);
 
   async function saveKey(name: ProviderName, key: string) {
@@ -61,5 +62,6 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
     <div className="settings-privacy"><ShieldCheck size={17} /><p>Keys use OS-backed encrypted storage. Drafts and project indexes stay in memory. No transcript history is written to disk.</p></div>
     <p role="status" className="settings-message">{message}</p>
     <button className="primary-button settings-save" disabled={busy || !window.mira} onClick={() => { void perform(save); }}>{busy ? 'Saving…' : 'Save'}</button>
+    <details className="settings-recovery"><summary>Recovery & diagnostics</summary><p>Reset preferences to their defaults without deleting saved provider keys. Your previous preferences are backed up.</p><button className="secondary-button" disabled={busy || !window.mira} onClick={() => { void perform(async () => { await window.mira!.settings.reset(); setProvider('anthropic'); setMessage('Preferences reset. Provider keys were preserved.'); }); }}>Reset preferences</button><button className="secondary-button" disabled={busy || !window.mira} onClick={() => { void perform(async () => { setDiagnostics(await window.mira!.diagnostics.get()); }); }}>View diagnostics</button>{diagnostics && <><p>This report contains app, OS, memory and speech-setup information. It excludes transcripts, keys, project paths and file contents.</p><pre>{JSON.stringify(diagnostics, null, 2)}</pre><button className="secondary-button" onClick={() => { void perform(async () => { await window.mira!.diagnostics.copy(); setMessage('Diagnostic report copied. Review it before sharing.'); }); }}>Copy diagnostic report</button></>}</details>
   </dialog>;
 }

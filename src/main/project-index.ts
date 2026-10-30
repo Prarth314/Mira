@@ -40,9 +40,8 @@ export class ProjectIndex {
           localRules.add(`${negated ? '!' : ''}${scoped}`);
         }
       }
-      const entries = await fs.readdir(path.join(root, relative), { withFileTypes: true });
-      entries.sort((a, b) => a.name.localeCompare(b.name));
-      for (const entry of entries) {
+      const entries = await fs.opendir(path.join(root, relative));
+      for await (const entry of entries) {
         if (++visited > MAX_VISITS || files.size >= MAX_FILES) break;
         const file = relative ? `${relative}/${entry.name}` : entry.name;
         if (entry.isSymbolicLink() || EXCLUDED.test(file) || localRules.ignores(file + (entry.isDirectory() ? '/' : ''))) continue;
@@ -57,7 +56,7 @@ export class ProjectIndex {
   }
 
   search(query: string): string[] {
-    return [...this.files].filter((file) => file.toLowerCase().includes(query.toLowerCase())).slice(0, 50);
+    return [...this.files].filter((file) => file.toLowerCase().includes(query.toLowerCase())).sort().slice(0, 50);
   }
 
   async attach(paths: string[]): Promise<ContextAttachment[]> {

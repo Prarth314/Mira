@@ -6,7 +6,7 @@ import { atomicWrite, serialQueue } from '../../src/main/atomic-file';
 
 const state = vi.hoisted(() => ({ directory: '' }));
 vi.mock('electron', () => ({ app: { getPath: () => state.directory } }));
-import { getSettings, updateSettings, resetSettingsCache, validateSettings } from '../../src/main/settings';
+import { getSettings, updateSettings, resetSettingsCache, validateSettings, resetPreferences } from '../../src/main/settings';
 
 beforeEach(async () => {
   state.directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-settings-'));
@@ -27,6 +27,25 @@ describe('durable settings', () => {
     const first = await getSettings();
     first.autoSend = true;
     expect((await getSettings()).autoSend).toBe(false);
+  });
+  it('migrates legacy preferences on the next successful write', async () => {
+    const file = path.join(state.directory, 'settings.json');
+    await fs.writeFile(file, JSON.stringify({ defaultProvider: 'openai' }));
+    expect((await getSettings()).defaultProvider).toBe('openai');
+    await updateSettings({ showAdvancedProviders: true });
+    expect(JSON.parse(await fs.readFile(file, 'utf8'))).toMatchObject({ version: 1, settings: { defaultProvider: 'openai' } });
+  });
+  it('preserves malformed or future-version files until an explicit reset', async () => {
+    const file = path.join(state.directory, 'settings.json');
+    const contents = JSON.stringify({ version: 99, settings: {} });
+    await fs.writeFile(file, contents);
+    await expect(getSettings()).rejects.toThrow();
+    await expect(updateSettings({ autoSend: false })).rejects.toThrow();
+    expect(await fs.readFile(file, 'utf8')).toBe(contents);
+    await resetPreferences();
+    expect((await getSettings()).defaultProvider).toBe('anthropic');
+    const backup = (await fs.readdir(state.directory)).find((name) => name.endsWith('.backup'))!;
+    expect(await fs.readFile(path.join(state.directory, backup), 'utf8')).toBe(contents);
   });
   it('rejects unknown fields, invalid types and prototype-like properties', () => {
     expect(() => validateSettings({ autoSend: 'true' })).toThrow();

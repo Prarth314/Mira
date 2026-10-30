@@ -62,6 +62,13 @@ test('production build opens with an isolated preload and settings bridge', asyn
     expect(contextualCopy).not.toContain('PRIVATE=');
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+    await page.getByText('Recovery & diagnostics').click();
+    await page.getByRole('button', { name: 'View diagnostics' }).click();
+    await expect(page.getByRole('button', { name: 'Copy diagnostic report' })).toBeVisible();
+    const diagnostics = await page.evaluate(async () => JSON.stringify(await window.mira!.diagnostics.get()));
+    expect(diagnostics).not.toContain(profile);
+    expect(diagnostics).not.toContain('PRIVATE=');
+    expect(diagnostics).not.toContain('expired sessions');
     const settingsAccessibility = await new AxeBuilder({ page }).setLegacyMode().withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(settingsAccessibility.violations.map((v) => ({id:v.id,nodes:v.nodes.map((n) => ({target:n.target,summary:n.failureSummary}))}))).toEqual([]);
     await page.keyboard.press('Escape');

@@ -7,7 +7,7 @@ function on(channel, callback) {
 contextBridge.exposeInMainWorld('mira', {
   keys: { status: () => ipcRenderer.invoke('mira:keys:status'), save: (provider, key) => ipcRenderer.invoke('mira:keys:save', {provider, key}) },
   provider: { get: () => ipcRenderer.invoke('mira:provider:get'), set: (name) => ipcRenderer.invoke('mira:provider:set', {name}) },
-  settings: { get: () => ipcRenderer.invoke('mira:settings:get'), update: (patch) => ipcRenderer.invoke('mira:settings:update', patch) },
+  settings: { get: () => ipcRenderer.invoke('mira:settings:get'), update: (patch) => ipcRenderer.invoke('mira:settings:update', patch), reset: () => ipcRenderer.invoke('mira:settings:reset') },
   permissions: { probe: () => ipcRenderer.invoke('mira:permissions:probe'), requestMic: () => ipcRenderer.invoke('mira:permissions:requestMic'), openSettings: (what) => ipcRenderer.invoke('mira:permissions:openSettings', {what}) },
   model: { status: () => ipcRenderer.invoke('mira:model:status'), download: () => ipcRenderer.invoke('mira:model:download'), cancel: () => ipcRenderer.invoke('mira:model:cancel'), onProgress: (callback) => on('mira:model:progress', callback) },
   window: { show: () => ipcRenderer.invoke('mira:window:show'), hide: () => ipcRenderer.invoke('mira:window:hide') },
@@ -31,5 +31,9 @@ contextBridge.exposeInMainWorld('mira', {
     search: (query) => ipcRenderer.invoke('mira:project:search', query),
     select: (paths) => ipcRenderer.invoke('mira:project:select', { paths }),
     disconnect: () => ipcRenderer.invoke('mira:project:disconnect'),
+  },
+  diagnostics: {
+    get: () => ipcRenderer.invoke('mira:diagnostics:get'),
+    copy: () => ipcRenderer.invoke('mira:diagnostics:copy'),
   },
 });

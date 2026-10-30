@@ -50,6 +50,10 @@ declare global {
     };
     mira?: {
       studio: StudioApi;
+      diagnostics: {
+        get: () => Promise<Record<string, unknown>>;
+        copy: () => Promise<void>;
+      };
       project: {
         status: () => Promise<{ project: { name: string; count: number } | null; selected: ContextAttachment[] }>;
         connect: () => Promise<{ project: { name: string; count: number } | null; selected: ContextAttachment[] }>;
@@ -111,6 +115,7 @@ declare global {
         onToggle: (cb: () => void) => () => void;
       };
       settings: {
+        reset: () => Promise<unknown>;
         get: () => Promise<{
           defaultProvider: ProviderName;
           autoSend: boolean;
