@@ -16,7 +16,9 @@
     "package:dir": "npm run prepare:speech && npm run build && electron-builder --dir --publish never",
     "package": "npm run prepare:speech && npm run build && electron-builder --publish never",
     "test:e2e": "npm run build && playwright test",
-    "prepare:speech": "node scripts/prepare-whisper.mjs"
+    "prepare:speech": "node scripts/prepare-whisper.mjs",
+    "format": "prettier --write \"**/*.{ts,tsx,mts,js,mjs,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,mts,js,mjs,css}\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

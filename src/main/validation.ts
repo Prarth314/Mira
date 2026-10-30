@@ -10,7 +10,10 @@ export function record(value: unknown): Record<string, unknown> {
 
 export function text(value: unknown, name: string, max = 16_000, allowEmpty = false): string {
   if (typeof value !== 'string' || value.length > max || (!allowEmpty && !value.trim())) {
-    throw new MiraError('action_invalid', `${name} must be ${allowEmpty ? '' : 'non-empty '}text up to ${max} characters`);
+    throw new MiraError(
+      'action_invalid',
+      `${name} must be ${allowEmpty ? '' : 'non-empty '}text up to ${max} characters`,
+    );
   }
   return value;
 }

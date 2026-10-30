@@ -14,14 +14,22 @@ export function registerIpc(): void {
   registerStudio();
   registerProject();
   registerDiagnostics();
-  handle('mira:overlay:hide', () => { hideOverlay(); return { ok: true }; });
+  handle('mira:overlay:hide', () => {
+    hideOverlay();
+    return { ok: true };
+  });
   handle('mira:keys:status', () => status());
   handle('mira:keys:save', async (_event, payload: unknown) => {
     const value = record(payload);
     try {
       await setKey(providerName(value.provider), text(value.key, 'API key', 4096, true));
       return { ok: true };
-    } catch { return { ok: false, error: { kind: 'permission_denied', message: 'Could not save key in OS secure storage.' } }; }
+    } catch {
+      return {
+        ok: false,
+        error: { kind: 'permission_denied', message: 'Could not save key in OS secure storage.' },
+      };
+    }
   });
   handle('mira:provider:get', async () => ({ name: (await getSettings()).defaultProvider }));
   handle('mira:provider:set', async (_event, payload: unknown) => {
@@ -35,12 +43,20 @@ export function registerIpc(): void {
   handle('mira:permissions:probe', () => probePermissions());
   handle('mira:permissions:requestMic', async () => ({ granted: await requestMicrophone() }));
   handle('mira:permissions:openSettings', (_event, payload: unknown) => {
-    if (record(payload).what !== 'mic') throw new Error('Screen capture is not enabled in this release.');
+    if (record(payload).what !== 'mic')
+      throw new Error('Screen capture is not enabled in this release.');
     openSettingsForMicrophone();
     return { ok: true };
   });
   handle('mira:model:status', () => modelStatus());
-  handle('mira:model:cancel', () => { cancelModelDownload(); return { ok: true }; }, ['workspace']);
+  handle(
+    'mira:model:cancel',
+    () => {
+      cancelModelDownload();
+      return { ok: true };
+    },
+    ['workspace'],
+  );
   handle('mira:model:download', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     try {
@@ -48,6 +64,15 @@ export function registerIpc(): void {
         win?.webContents.send('mira:model:progress', { downloaded, total });
       });
       return { ok: true, path: modelPath };
-    } catch { return { ok: false, error: { kind: 'stt_failed', message: 'Model download failed. Check your connection and available disk space, then retry.' } }; }
+    } catch {
+      return {
+        ok: false,
+        error: {
+          kind: 'stt_failed',
+          message:
+            'Model download failed. Check your connection and available disk space, then retry.',
+        },
+      };
+    }
   });
 }

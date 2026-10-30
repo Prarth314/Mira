@@ -54,7 +54,7 @@ export interface Provider {
 export const ACTUATE_TOOL: Tool = {
   name: 'actuate',
   description:
-    'Execute a typed action on the user\'s machine. Pick exactly one action.kind. ' +
+    "Execute a typed action on the user's machine. Pick exactly one action.kind. " +
     'You CANNOT run shell commands or arbitrary code; you can only emit one of the typed action shapes.',
   inputSchema: {
     type: 'object',

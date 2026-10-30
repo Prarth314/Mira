@@ -19,7 +19,9 @@ beforeEach(async () => {
   mock.directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-keystore-'));
   mock.available = true;
 });
-afterEach(async () => { await fs.rm(mock.directory, { recursive: true, force: true }); });
+afterEach(async () => {
+  await fs.rm(mock.directory, { recursive: true, force: true });
+});
 
 describe('secure-storage persistence contract', () => {
   it('serializes updates and removes only the selected provider key', async () => {

@@ -24,7 +24,11 @@ export function registerDiagnostics(): void {
     };
   };
   handle('mira:diagnostics:get', report, ['workspace']);
-  handle('mira:diagnostics:copy', async () => {
-    await clipboard.writeText(JSON.stringify(await report(), null, 2));
-  }, ['workspace']);
+  handle(
+    'mira:diagnostics:copy',
+    async () => {
+      await clipboard.writeText(JSON.stringify(await report(), null, 2));
+    },
+    ['workspace'],
+  );
 }

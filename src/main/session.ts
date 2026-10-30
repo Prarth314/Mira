@@ -16,15 +16,23 @@ export class SessionCoordinator {
   begin(owner: number): VoiceSession {
     if (this.current) throw new MiraError('action_invalid', 'Another session is active');
     this.current = {
-      id: randomUUID(), owner, controller: new AbortController(),
-      audio: new AudioBuffer(), phase: 'recording',
+      id: randomUUID(),
+      owner,
+      controller: new AbortController(),
+      audio: new AudioBuffer(),
+      phase: 'recording',
     };
     return this.current;
   }
 
   require(owner: number, id: string): VoiceSession {
     const session = this.current;
-    if (!session || session.owner !== owner || session.id !== id || session.controller.signal.aborted) {
+    if (
+      !session ||
+      session.owner !== owner ||
+      session.id !== id ||
+      session.controller.signal.aborted
+    ) {
       throw new MiraError('action_invalid', 'Session is no longer active in this window');
     }
     return session;
@@ -38,7 +46,8 @@ export class SessionCoordinator {
 
   process(owner: number, id: string): VoiceSession {
     const session = this.require(owner, id);
-    if (session.phase !== 'recording') throw new MiraError('action_invalid', 'Session is already processing');
+    if (session.phase !== 'recording')
+      throw new MiraError('action_invalid', 'Session is already processing');
     session.phase = 'processing';
     return session;
   }

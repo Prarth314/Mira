@@ -14,7 +14,9 @@ beforeEach(async () => {
   await fs.writeFile(path.join(root, '.gitignore'), 'ignored.ts\n');
   await fs.writeFile(path.join(root, 'ignored.ts'), 'ignored');
 });
-afterEach(async () => { await fs.rm(root, { recursive: true, force: true }); });
+afterEach(async () => {
+  await fs.rm(root, { recursive: true, force: true });
+});
 
 describe('explicit project context', () => {
   it('indexes filenames while excluding ignored and sensitive files', async () => {
@@ -49,14 +51,22 @@ describe('explicit project context', () => {
     const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-outside-'));
     try {
       await fs.writeFile(path.join(outside, 'external.ts'), 'outside');
-      await fs.symlink(outside, path.join(root, 'linked'), process.platform === 'win32' ? 'junction' : 'dir');
+      await fs.symlink(
+        outside,
+        path.join(root, 'linked'),
+        process.platform === 'win32' ? 'junction' : 'dir',
+      );
       const index = new ProjectIndex();
       await index.connect(root);
       expect(index.search('external')).toEqual([]);
-    } finally { await fs.rm(outside, { recursive: true, force: true }); }
+    } finally {
+      await fs.rm(outside, { recursive: true, force: true });
+    }
   });
   it('fences attached source without letting embedded fences terminate the block', () => {
-    const output = formatPrompt('Review this.', [{ path: 'a.md', content: '```\nsource\n```', sha256: '' }]);
+    const output = formatPrompt('Review this.', [
+      { path: 'a.md', content: '```\nsource\n```', sha256: '' },
+    ]);
     expect(output).toContain('````\n```\nsource\n```\n````');
   });
 });

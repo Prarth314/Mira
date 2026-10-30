@@ -11,9 +11,7 @@ describe('parseAction', () => {
   });
 
   it('rejects launch_app with shell metachars', () => {
-    expect(() => parseAction({ kind: 'launch_app', appName: 'Calc; rm -rf /' })).toThrow(
-      MiraError,
-    );
+    expect(() => parseAction({ kind: 'launch_app', appName: 'Calc; rm -rf /' })).toThrow(MiraError);
   });
 
   it('rejects launch_app with backticks', () => {
@@ -26,9 +24,9 @@ describe('parseAction', () => {
   });
 
   it('rejects open_url with javascript: protocol', () => {
-    expect(() =>
-      parseAction({ kind: 'open_url', url: 'javascript:alert(1)' }),
-    ).toThrow(/protocol not allowed/);
+    expect(() => parseAction({ kind: 'open_url', url: 'javascript:alert(1)' })).toThrow(
+      /protocol not allowed/,
+    );
   });
 
   it('rejects open_url with file: protocol', () => {

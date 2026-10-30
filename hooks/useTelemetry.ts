@@ -12,7 +12,9 @@ export function useTelemetry(intervalMs = 2500): Telemetry | null {
       try {
         const res = await api.telemetry.read();
         if (!cancelled && res.ok) setData(res.data);
-      } catch {/* noop */}
+      } catch {
+        /* noop */
+      }
     };
     void tick();
     const id = setInterval(tick, intervalMs);

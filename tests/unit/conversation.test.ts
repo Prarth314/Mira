@@ -11,7 +11,9 @@ describe('Conversation', () => {
   it('appends user, assistant, and tool messages', () => {
     const c = new Conversation();
     c.addUserMessage('hello');
-    c.addAssistantMessage('hi', [{ id: 'tc1', name: 'actuate', input: { action: { kind: 'speak', text: 'hi' } } }]);
+    c.addAssistantMessage('hi', [
+      { id: 'tc1', name: 'actuate', input: { action: { kind: 'speak', text: 'hi' } } },
+    ]);
     c.addToolResult('tc1', 'ok');
     const snap = c.snapshot();
     expect(snap).toHaveLength(3);
@@ -41,7 +43,9 @@ describe('Conversation', () => {
       c.addUserMessage('x'.repeat(100));
     }
     expect(c.size()).toBeLessThan(50);
-    expect(c.estimatedTokens()).toBeLessThanOrEqual(c['budget' as keyof typeof c] as unknown as number * 2);
+    expect(c.estimatedTokens()).toBeLessThanOrEqual(
+      (c['budget' as keyof typeof c] as unknown as number) * 2,
+    );
   });
 
   it('drops trailing tool results when their tool_use is dropped', () => {

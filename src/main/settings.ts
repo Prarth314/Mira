@@ -44,13 +44,21 @@ export async function getSettings(): Promise<Settings> {
     const raw = await fs.readFile(settingsPath(), 'utf8');
     const document = record(JSON.parse(raw));
     if ('version' in document && document.version !== 1) {
-      throw new MiraError('action_invalid', 'Preferences were written by an unsupported version. Update Mira or reset preferences.');
+      throw new MiraError(
+        'action_invalid',
+        'Preferences were written by an unsupported version. Update Mira or reset preferences.',
+      );
     }
     const parsed = validateSettings('version' in document ? document.settings : document);
     cached = { ...DEFAULTS, ...parsed };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') cached = { ...DEFAULTS };
-    else throw new MiraError('action_invalid', 'Preferences could not be read. Reset preferences to recover; provider keys are kept separately.', error);
+    else
+      throw new MiraError(
+        'action_invalid',
+        'Preferences could not be read. Reset preferences to recover; provider keys are kept separately.',
+        error,
+      );
   }
   return { ...cached };
 }
@@ -69,8 +77,11 @@ export async function updateSettings(patch: Partial<Settings>): Promise<Settings
 export async function resetPreferences(): Promise<Settings> {
   return enqueue(async () => {
     const file = settingsPath();
-    try { await fs.copyFile(file, `${file}.${Date.now()}.backup`); }
-    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+    try {
+      await fs.copyFile(file, `${file}.${Date.now()}.backup`);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
     const defaults = { ...DEFAULTS };
     await atomicWrite(file, JSON.stringify({ version: 1, settings: defaults }, null, 2));
     cached = defaults;

@@ -30,15 +30,13 @@ describe('classifyApp', () => {
   });
 
   it('classifies Claude (desktop) as claude-desktop', () => {
-    expect(
-      classifyApp({ name: 'Claude', bundleId: 'com.anthropic.claudefordesktop' }),
-    ).toBe('claude-desktop');
+    expect(classifyApp({ name: 'Claude', bundleId: 'com.anthropic.claudefordesktop' })).toBe(
+      'claude-desktop',
+    );
   });
 
   it('returns unknown for arbitrary apps', () => {
-    expect(classifyApp({ name: 'Slack', bundleId: 'com.tinyspeck.slackmacgap' })).toBe(
-      'unknown',
-    );
+    expect(classifyApp({ name: 'Slack', bundleId: 'com.tinyspeck.slackmacgap' })).toBe('unknown');
     expect(classifyApp({ name: 'Notes', bundleId: null })).toBe('unknown');
   });
 });

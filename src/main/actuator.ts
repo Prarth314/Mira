@@ -6,7 +6,8 @@ import { routeDevPrompt } from './dev-tool-router';
 import { cleanPrompt } from './prompt-cleanup';
 import { getSettings } from './settings';
 
-export type ActuatorResult = { ok: true; message: string } | { ok: false; error: { kind: string; message: string } };
+export type ActuatorResult =
+  { ok: true; message: string } | { ok: false; error: { kind: string; message: string } };
 
 export async function runAction(action: Action): Promise<ActuatorResult> {
   try {
@@ -59,9 +60,7 @@ export async function runAction(action: Action): Promise<ActuatorResult> {
 function execProcess(cmd: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { stdio: 'ignore' });
-    child.on('error', (e) =>
-      reject(new MiraError('action_invalid', `${cmd} spawn: ${e.message}`)),
-    );
+    child.on('error', (e) => reject(new MiraError('action_invalid', `${cmd} spawn: ${e.message}`)));
     child.on('close', (code) => {
       if (code === 0) resolve();
       else reject(new MiraError('action_invalid', `${cmd} exited ${code}`));

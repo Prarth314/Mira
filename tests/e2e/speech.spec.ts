@@ -7,7 +7,9 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
   test.skip(process.env.MIRA_SPEECH_TEST !== '1', 'Opt-in: downloads the pinned 148 MB model.');
   test.setTimeout(180_000);
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-speech-test-'));
-  const sample = await fs.readFile('vendor/whisper/whisper.cpp-306c88f4d1286aec1bf96e544632897886af5501/samples/jfk.wav');
+  const sample = await fs.readFile(
+    'vendor/whisper/whisper.cpp-306c88f4d1286aec1bf96e544632897886af5501/samples/jfk.wav',
+  );
   let offset = 12;
   let pcm: Buffer | undefined;
   while (offset + 8 <= sample.length) {
@@ -19,9 +21,16 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
     offset += 8 + length + (length % 2);
   }
   expect(pcm).toBeDefined();
-  const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === 'string'));
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string',
+    ),
+  );
   delete env.ELECTRON_RUN_AS_NODE;
-  const app = await electron.launch({ args: ['.', `--user-data-dir=${profile}`], env: { ...env, NODE_ENV: 'production' } });
+  const app = await electron.launch({
+    args: ['.', `--user-data-dir=${profile}`],
+    env: { ...env, NODE_ENV: 'production' },
+  });
   try {
     const page = await app.firstWindow();
     await page.waitForFunction(() => !!window.mira);
@@ -29,9 +38,12 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
     expect(result.ok).toBe(true);
     const id = await page.evaluate(async () => (await window.mira!.studio.start('dictate')).id);
     for (let i = 0; i < pcm!.length; i += 8192) {
-      await page.evaluate(async ({ id, bytes }) => {
-        await window.mira!.studio.chunk(id, new Uint8Array(bytes).buffer);
-      }, { id, bytes: [...pcm!.subarray(i, i + 8192)] });
+      await page.evaluate(
+        async ({ id, bytes }) => {
+          await window.mira!.studio.chunk(id, new Uint8Array(bytes).buffer);
+        },
+        { id, bytes: [...pcm!.subarray(i, i + 8192)] },
+      );
     }
     await page.evaluate(async (id) => window.mira!.studio.finish(id), id);
     const state = await page.evaluate(async () => window.mira!.studio.state());

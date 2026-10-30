@@ -18,11 +18,12 @@ class MiraPcmProcessor extends AudioWorkletProcessor {
   }
   process(inputs) {
     const input = inputs[0]?.[0];
-    if (input) for (const value of input) {
-      const sample = Math.max(-1, Math.min(1, value));
-      this.samples[this.offset++] = sample < 0 ? sample * 32768 : sample * 32767;
-      if (this.offset === this.samples.length) this.flush();
-    }
+    if (input)
+      for (const value of input) {
+        const sample = Math.max(-1, Math.min(1, value));
+        this.samples[this.offset++] = sample < 0 ? sample * 32768 : sample * 32767;
+        if (this.offset === this.samples.length) this.flush();
+      }
     return true;
   }
 }

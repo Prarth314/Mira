@@ -61,10 +61,7 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ isActive, analyser, s
       ) : (
         <div className="flex items-center gap-1.5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-1 h-1 rounded-full bg-zinc-600"
-            />
+            <div key={i} className="w-1 h-1 rounded-full bg-zinc-600" />
           ))}
         </div>
       )}

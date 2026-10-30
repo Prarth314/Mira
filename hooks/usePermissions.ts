@@ -10,7 +10,9 @@ export function usePermissions() {
     try {
       const r = await api.permissions.probe();
       setReport(r);
-    } catch {/* noop */}
+    } catch {
+      /* noop */
+    }
   }, []);
 
   useEffect(() => {

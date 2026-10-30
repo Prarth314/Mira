@@ -4,17 +4,34 @@ import type { Destination } from '../types/studio';
 
 export type FrontmostApp = Destination;
 
-export async function nativeScript(command: string, args: string[], signal?: AbortSignal): Promise<string> {
+export async function nativeScript(
+  command: string,
+  args: string[],
+  signal?: AbortSignal,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { windowsHide: true, signal, timeout: 10_000 });
     let out = '';
     let err = '';
-    child.stdout.on('data', (b: Buffer) => { out = (out + b.toString()).slice(-32_768); });
-    child.stderr.on('data', (b: Buffer) => { err = (err + b.toString()).slice(-1024); });
-    child.on('error', () => reject(new MiraError('action_invalid', 'Native integration unavailable')));
-    child.on('close', (code) => code === 0 ? resolve(out.trim()) : reject(
-      new MiraError('action_invalid', `Native integration failed (${code}): ${err.slice(0, 200)}`),
-    ));
+    child.stdout.on('data', (b: Buffer) => {
+      out = (out + b.toString()).slice(-32_768);
+    });
+    child.stderr.on('data', (b: Buffer) => {
+      err = (err + b.toString()).slice(-1024);
+    });
+    child.on('error', () =>
+      reject(new MiraError('action_invalid', 'Native integration unavailable')),
+    );
+    child.on('close', (code) =>
+      code === 0
+        ? resolve(out.trim())
+        : reject(
+            new MiraError(
+              'action_invalid',
+              `Native integration failed (${code}): ${err.slice(0, 200)}`,
+            ),
+          ),
+    );
   });
 }
 
@@ -32,8 +49,13 @@ public static class MiraWindows {
 `;
 
 export function powershell(script: string): Promise<string> {
-  return nativeScript('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand',
-    Buffer.from(`$ErrorActionPreference = 'Stop';\n${script}`, 'utf16le').toString('base64')]);
+  return nativeScript('powershell.exe', [
+    '-NoLogo',
+    '-NoProfile',
+    '-NonInteractive',
+    '-EncodedCommand',
+    Buffer.from(`$ErrorActionPreference = 'Stop';\n${script}`, 'utf16le').toString('base64'),
+  ]);
 }
 
 export async function getFrontmostApp(): Promise<FrontmostApp> {
@@ -48,10 +70,13 @@ $processInfo = Get-Process -Id $targetProcess
     return JSON.parse(result) as FrontmostApp;
   }
   if (process.platform === 'darwin') {
-    const result = await nativeScript('osascript', ['-e', `tell application "System Events"
+    const result = await nativeScript('osascript', [
+      '-e',
+      `tell application "System Events"
 set frontApp to first application process whose frontmost is true
 return (name of frontApp) & "|" & (bundle identifier of frontApp) & "|" & (unix id of frontApp)
-end tell`]);
+end tell`,
+    ]);
     const [name, bundleId, pid] = result.split('|');
     return { name, bundleId: bundleId || null, processId: Number(pid) };
   }

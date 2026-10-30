@@ -6,13 +6,21 @@ import { atomicWrite, serialQueue } from '../../src/main/atomic-file';
 
 const state = vi.hoisted(() => ({ directory: '' }));
 vi.mock('electron', () => ({ app: { getPath: () => state.directory } }));
-import { getSettings, updateSettings, resetSettingsCache, validateSettings, resetPreferences } from '../../src/main/settings';
+import {
+  getSettings,
+  updateSettings,
+  resetSettingsCache,
+  validateSettings,
+  resetPreferences,
+} from '../../src/main/settings';
 
 beforeEach(async () => {
   state.directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-settings-'));
   resetSettingsCache();
 });
-afterEach(async () => { await fs.rm(state.directory, { recursive: true, force: true }); });
+afterEach(async () => {
+  await fs.rm(state.directory, { recursive: true, force: true });
+});
 
 describe('durable settings', () => {
   it('serializes concurrent updates and persists them across cache resets', async () => {
@@ -33,7 +41,10 @@ describe('durable settings', () => {
     await fs.writeFile(file, JSON.stringify({ defaultProvider: 'openai' }));
     expect((await getSettings()).defaultProvider).toBe('openai');
     await updateSettings({ showAdvancedProviders: true });
-    expect(JSON.parse(await fs.readFile(file, 'utf8'))).toMatchObject({ version: 1, settings: { defaultProvider: 'openai' } });
+    expect(JSON.parse(await fs.readFile(file, 'utf8'))).toMatchObject({
+      version: 1,
+      settings: { defaultProvider: 'openai' },
+    });
   });
   it('preserves malformed or future-version files until an explicit reset', async () => {
     const file = path.join(state.directory, 'settings.json');
@@ -54,7 +65,11 @@ describe('durable settings', () => {
   });
   it('does not poison the queue after a failed operation', async () => {
     const enqueue = serialQueue();
-    await expect(enqueue(async () => { throw new Error('disk full'); })).rejects.toThrow();
+    await expect(
+      enqueue(async () => {
+        throw new Error('disk full');
+      }),
+    ).rejects.toThrow();
     expect(await enqueue(async () => 42)).toBe(42);
   });
   it('replaces files without leaving partial contents or temporary files', async () => {

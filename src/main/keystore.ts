@@ -10,9 +10,14 @@ type KeystoreFile = Partial<Record<ProviderName, string>>;
 const enqueue = serialQueue();
 
 function requireSecureStorage(): void {
-  if (!safeStorage.isEncryptionAvailable() ||
-    (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text')) {
-    throw new MiraError('permission_denied', 'OS-backed secure storage is not available. Dictation remains usable without keys.');
+  if (
+    !safeStorage.isEncryptionAvailable() ||
+    (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text')
+  ) {
+    throw new MiraError(
+      'permission_denied',
+      'OS-backed secure storage is not available. Dictation remains usable without keys.',
+    );
   }
 }
 
@@ -37,10 +42,14 @@ async function loadAll(): Promise<KeystoreFile> {
   try {
     const input = record(JSON.parse(json));
     const output: KeystoreFile = {};
-    for (const [name, key] of Object.entries(input)) output[providerName(name)] = text(key, 'Stored key', 4096);
+    for (const [name, key] of Object.entries(input))
+      output[providerName(name)] = text(key, 'Stored key', 4096);
     return output;
   } catch {
-    throw new MiraError('permission_denied', 'Stored keys could not be read. Existing encrypted data was preserved.');
+    throw new MiraError(
+      'permission_denied',
+      'Stored keys could not be read. Existing encrypted data was preserved.',
+    );
   }
 }
 

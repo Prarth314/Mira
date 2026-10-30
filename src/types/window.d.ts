@@ -3,8 +3,7 @@ import type { Action } from './actions';
 import type { StudioApi, ContextAttachment } from './studio';
 
 export type ActuatorResult =
-  | { ok: true; message: string }
-  | { ok: false; error: { kind: string; message: string } };
+  { ok: true; message: string } | { ok: false; error: { kind: string; message: string } };
 
 export type ValidatedActionResult = {
   toolCallId: string;
@@ -29,12 +28,7 @@ export type Telemetry = {
   battery: number | null;
 };
 
-export type PermissionState =
-  | 'granted'
-  | 'denied'
-  | 'unknown'
-  | 'restricted'
-  | 'not-determined';
+export type PermissionState = 'granted' | 'denied' | 'unknown' | 'restricted' | 'not-determined';
 
 export type PermissionsReport = {
   microphone: PermissionState;
@@ -55,8 +49,14 @@ declare global {
         copy: () => Promise<void>;
       };
       project: {
-        status: () => Promise<{ project: { name: string; count: number } | null; selected: ContextAttachment[] }>;
-        connect: () => Promise<{ project: { name: string; count: number } | null; selected: ContextAttachment[] }>;
+        status: () => Promise<{
+          project: { name: string; count: number } | null;
+          selected: ContextAttachment[];
+        }>;
+        connect: () => Promise<{
+          project: { name: string; count: number } | null;
+          selected: ContextAttachment[];
+        }>;
         search: (query: string) => Promise<string[]>;
         select: (paths: string[]) => Promise<ContextAttachment[]>;
         disconnect: () => Promise<void>;
@@ -87,7 +87,9 @@ declare global {
         cancel: () => Promise<{ ok: boolean }>;
       };
       tts: {
-        speak: (text: string) => Promise<{ ok: boolean; error?: { kind: string; message: string } }>;
+        speak: (
+          text: string,
+        ) => Promise<{ ok: boolean; error?: { kind: string; message: string } }>;
         cancel: () => Promise<{ ok: boolean }>;
       };
       permissions: {
@@ -96,12 +98,22 @@ declare global {
         openSettings: (what: 'mic' | 'screen') => Promise<{ ok: boolean }>;
       };
       telemetry: {
-        read: () => Promise<{ ok: true; data: Telemetry } | { ok: false; error: { kind: string; message: string } }>;
+        read: () => Promise<
+          { ok: true; data: Telemetry } | { ok: false; error: { kind: string; message: string } }
+        >;
       };
       model: {
-        status: () => Promise<{ present: boolean; path: string; sha256: string; runtimeAvailable: boolean; downloading: boolean }>;
+        status: () => Promise<{
+          present: boolean;
+          path: string;
+          sha256: string;
+          runtimeAvailable: boolean;
+          downloading: boolean;
+        }>;
         cancel: () => Promise<{ ok: boolean }>;
-        download: () => Promise<{ ok: true; path: string } | { ok: false; error: { kind: string; message: string } }>;
+        download: () => Promise<
+          { ok: true; path: string } | { ok: false; error: { kind: string; message: string } }
+        >;
         onProgress: (cb: (data: { downloaded: number; total: number }) => void) => () => void;
       };
       window: {
@@ -121,11 +133,13 @@ declare global {
           autoSend: boolean;
           showAdvancedProviders: boolean;
         }>;
-        update: (patch: Partial<{
-          defaultProvider: ProviderName;
-          autoSend: boolean;
-          showAdvancedProviders: boolean;
-        }>) => Promise<{
+        update: (
+          patch: Partial<{
+            defaultProvider: ProviderName;
+            autoSend: boolean;
+            showAdvancedProviders: boolean;
+          }>,
+        ) => Promise<{
           defaultProvider: ProviderName;
           autoSend: boolean;
           showAdvancedProviders: boolean;

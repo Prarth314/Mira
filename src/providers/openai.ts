@@ -18,11 +18,7 @@ function imageDataUrl(img: Buffer): string {
   return `data:image/jpeg;base64,${img.toString('base64')}`;
 }
 
-function toOpenAIMessages(
-  msgs: Msg[],
-  images?: Buffer[],
-  systemPrompt?: string,
-): OpenAIMessage[] {
+function toOpenAIMessages(msgs: Msg[], images?: Buffer[], systemPrompt?: string): OpenAIMessage[] {
   const out: OpenAIMessage[] = [];
   if (systemPrompt) out.push({ role: 'system', content: systemPrompt });
   for (let i = 0; i < msgs.length; i++) {
@@ -81,24 +77,32 @@ export class OpenAIProvider implements Provider {
       },
     }));
 
-    const resp = await withRetry(async () => {
-      try {
-        return await this.client.chat.completions.create({
-          model: this.model,
-          messages,
-          tools,
-          max_completion_tokens: 2048,
-        }, { signal: input.signal });
-      } catch (e: unknown) {
-        throw mapOpenAIError(e);
-      }
-    }, undefined, input.signal);
+    const resp = await withRetry(
+      async () => {
+        try {
+          return await this.client.chat.completions.create(
+            {
+              model: this.model,
+              messages,
+              tools,
+              max_completion_tokens: 2048,
+            },
+            { signal: input.signal },
+          );
+        } catch (e: unknown) {
+          throw mapOpenAIError(e);
+        }
+      },
+      undefined,
+      input.signal,
+    );
 
     const choice = resp.choices[0];
     const text = choice?.message?.content ?? null;
     const toolCalls: ToolCall[] = (choice?.message?.tool_calls ?? [])
-      .filter((tc): tc is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall =>
-        tc.type === 'function',
+      .filter(
+        (tc): tc is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall =>
+          tc.type === 'function',
       )
       .map((tc) => {
         let parsed: Record<string, unknown>;

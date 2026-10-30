@@ -74,19 +74,26 @@ export class AnthropicProvider implements Provider {
       input_schema: t.inputSchema as Anthropic.Tool.InputSchema,
     }));
 
-    const resp = await withRetry(async () => {
-      try {
-        return await this.client.messages.create({
-          model: this.model,
-          max_tokens: 1024,
-          system: input.systemPrompt,
-          messages,
-          tools,
-        }, { signal: input.signal });
-      } catch (e: unknown) {
-        throw mapAnthropicError(e);
-      }
-    }, undefined, input.signal);
+    const resp = await withRetry(
+      async () => {
+        try {
+          return await this.client.messages.create(
+            {
+              model: this.model,
+              max_tokens: 1024,
+              system: input.systemPrompt,
+              messages,
+              tools,
+            },
+            { signal: input.signal },
+          );
+        } catch (e: unknown) {
+          throw mapAnthropicError(e);
+        }
+      },
+      undefined,
+      input.signal,
+    );
 
     const toolCalls: ToolCall[] = [];
     let text: string | null = null;

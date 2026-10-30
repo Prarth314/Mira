@@ -11,7 +11,10 @@ afterEach(async () => {
 });
 
 async function tmp(): Promise<string> {
-  const p = path.join(os.tmpdir(), `mira-wav-test-${Date.now()}-${Math.random().toString(36).slice(2)}.wav`);
+  const p = path.join(
+    os.tmpdir(),
+    `mira-wav-test-${Date.now()}-${Math.random().toString(36).slice(2)}.wav`,
+  );
   tempFiles.push(p);
   return p;
 }
@@ -28,8 +31,8 @@ describe('writeInt16PcmAsWav', () => {
     expect(buf.subarray(36, 40).toString()).toBe('data');
     expect(buf.readUInt32LE(40)).toBe(0);
     expect(buf.readUInt32LE(24)).toBe(16000); // sample rate
-    expect(buf.readUInt16LE(22)).toBe(1);     // mono
-    expect(buf.readUInt16LE(34)).toBe(16);    // bit depth
+    expect(buf.readUInt16LE(22)).toBe(1); // mono
+    expect(buf.readUInt16LE(34)).toBe(16); // bit depth
   });
 
   it('writes correct sizes for a non-empty PCM payload', async () => {

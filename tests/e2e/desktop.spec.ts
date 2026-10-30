@@ -13,13 +13,27 @@ test('production build opens with an isolated preload and settings bridge', asyn
   );
   delete env.ELECTRON_RUN_AS_NODE;
   const executablePath = process.env.MIRA_TEST_EXECUTABLE;
-  const app = await electron.launch({ executablePath, args: [...(executablePath ? [] : ['.']), `--user-data-dir=${profile}`], env });
+  const app = await electron.launch({
+    executablePath,
+    args: [...(executablePath ? [] : ['.']), `--user-data-dir=${profile}`],
+    env,
+  });
   try {
     const page = await app.firstWindow();
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1200, 1400));
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].setContentSize(1200, 1400),
+    );
     await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
-    const workspaceAccessibility = await new AxeBuilder({ page }).setLegacyMode().withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
-    expect(workspaceAccessibility.violations.map((v) => ({id:v.id,nodes:v.nodes.map((n) => ({target:n.target,summary:n.failureSummary}))}))).toEqual([]);
+    const workspaceAccessibility = await new AxeBuilder({ page })
+      .setLegacyMode()
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    expect(
+      workspaceAccessibility.violations.map((v) => ({
+        id: v.id,
+        nodes: v.nodes.map((n) => ({ target: n.target, summary: n.failureSummary })),
+      })),
+    ).toEqual([]);
     const bridge = await page.evaluate(async () => ({
       keys: await window.mira?.keys.status(),
       settings: await window.mira?.settings.get(),
@@ -30,15 +44,21 @@ test('production build opens with an isolated preload and settings bridge', asyn
     expect(bridge.node).toBe('undefined');
     await page.getByLabel('Prefer to type?').fill('Add regression tests for expired sessions.');
     await page.getByRole('button', { name: 'Prepare instruction' }).click();
-    await expect(page.getByLabel('Prepared prompt')).toHaveValue('Add regression tests for expired sessions.');
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue(
+      'Add regression tests for expired sessions.',
+    );
     await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
     await expect(page.getByText('Copied. Paste it wherever you are working.')).toBeVisible();
     const copy = await app.evaluate(async ({ clipboard }) => clipboard.readText());
     expect(copy).toBe('Add regression tests for expired sessions.');
     await page.screenshot({ path: 'test-results/workspace.png', fullPage: true });
     const invalidProviderRejected = await page.evaluate(async () => {
-      try { await window.mira!.provider.set('unknown' as 'openai'); return false; }
-      catch { return true; }
+      try {
+        await window.mira!.provider.set('unknown' as 'openai');
+        return false;
+      } catch {
+        return true;
+      }
     });
     expect(invalidProviderRejected).toBe(true);
     await page.getByRole('button', { name: 'Discard draft' }).click();
@@ -65,12 +85,22 @@ test('production build opens with an isolated preload and settings bridge', asyn
     await page.getByText('Recovery & diagnostics').click();
     await page.getByRole('button', { name: 'View diagnostics' }).click();
     await expect(page.getByRole('button', { name: 'Copy diagnostic report' })).toBeVisible();
-    const diagnostics = await page.evaluate(async () => JSON.stringify(await window.mira!.diagnostics.get()));
+    const diagnostics = await page.evaluate(async () =>
+      JSON.stringify(await window.mira!.diagnostics.get()),
+    );
     expect(diagnostics).not.toContain(profile);
     expect(diagnostics).not.toContain('PRIVATE=');
     expect(diagnostics).not.toContain('expired sessions');
-    const settingsAccessibility = await new AxeBuilder({ page }).setLegacyMode().withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
-    expect(settingsAccessibility.violations.map((v) => ({id:v.id,nodes:v.nodes.map((n) => ({target:n.target,summary:n.failureSummary}))}))).toEqual([]);
+    const settingsAccessibility = await new AxeBuilder({ page })
+      .setLegacyMode()
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    expect(
+      settingsAccessibility.violations.map((v) => ({
+        id: v.id,
+        nodes: v.nodes.map((n) => ({ target: n.target, summary: n.failureSummary })),
+      })),
+    ).toEqual([]);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
   } finally {

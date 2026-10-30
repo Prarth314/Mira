@@ -1,4 +1,3 @@
-
 export interface SystemState {
   volume: number;
   brightness: number;

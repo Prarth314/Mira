@@ -14,8 +14,8 @@ export async function writeInt16PcmAsWav(pcm: Buffer, outPath: string): Promise<
   header.writeUInt32LE(36 + dataSize, 4);
   header.write('WAVE', 8);
   header.write('fmt ', 12);
-  header.writeUInt32LE(16, 16);            // fmt chunk size
-  header.writeUInt16LE(1, 20);             // PCM
+  header.writeUInt32LE(16, 16); // fmt chunk size
+  header.writeUInt16LE(1, 20); // PCM
   header.writeUInt16LE(NUM_CHANNELS, 22);
   header.writeUInt32LE(SAMPLE_RATE, 24);
   header.writeUInt32LE(byteRate, 28);
