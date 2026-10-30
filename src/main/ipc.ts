@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { handle } from './security';
 import { record, text, providerName } from './validation';
-import { getKey, setKey, status } from './keystore';
+import { setKey, status } from './keystore';
 import { getSettings, updateSettings } from './settings';
 import { downloadModel, modelStatus, cancelModelDownload } from './stt';
 import { probePermissions, requestMicrophone, openSettingsForMicrophone } from './permissions';
@@ -36,7 +36,7 @@ export function registerIpc(): void {
     openSettingsForMicrophone();
     return { ok: true };
   });
-  handle('mira:model:status', async () => ({ ...await modelStatus(), keyConfigured: !!await getKey((await getSettings()).defaultProvider) }));
+  handle('mira:model:status', () => modelStatus());
   handle('mira:model:cancel', () => { cancelModelDownload(); return { ok: true }; }, ['workspace']);
   handle('mira:model:download', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);

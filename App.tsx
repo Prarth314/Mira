@@ -87,7 +87,7 @@ const App: React.FC = () => {
                   <button className="primary-button" disabled={!api || busy || studio.starting || (active && !studio.ownsSession) || (active && state.phase !== 'recording')} onClick={() => { void (state.phase === 'recording' ? studio.finish() : studio.start(mode)); }}>
                     {studio.starting ? <Loader2 size={16} className="animate-spin" /> : state.phase === 'recording' ? <Square size={14} /> : <Mic size={16} />}{state.phase === 'recording' ? 'Finish recording' : 'Start recording'}
                   </button>
-                  {active && studio.ownsSession && <button className="secondary-button" onClick={() => { void studio.cancel(); }}><X size={14} /> Cancel</button>}
+                  {active && (studio.ownsSession || busy) && <button className="secondary-button" onClick={() => { if (studio.ownsSession) void studio.cancel(); else if (state.sessionId) void api?.studio.cancel(state.sessionId).catch(() => studio.setError('Could not cancel this session.')); }}><X size={14} /> Cancel</button>}
                 </div>
               </div>
               <div className="typed-input"><label htmlFor="instruction" className="text-xs text-zinc-500">Prefer to type?</label><textarea id="instruction" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Describe what you want to build…" maxLength={16000} disabled={active || busy} rows={3} /><button className="text-button" disabled={!api || !input.trim() || active || busy} onClick={() => { void perform(() => api!.studio.prepare(input, mode)); }}>Prepare instruction <ArrowUpRight size={15} /></button></div>

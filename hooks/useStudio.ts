@@ -11,6 +11,7 @@ export function useStudio() {
   const [starting, setStarting] = useState(false);
   const owner = useRef<string | null>(null);
   const startingRef = useRef(false);
+  const finishingRef = useRef(false);
   const generation = useRef(0);
   const capture = useRef<{ stream: MediaStream; context: AudioContext; node: AudioWorkletNode } | null>(null);
   const pending = useRef<Promise<void>>(Promise.resolve());
@@ -39,7 +40,8 @@ export function useStudio() {
 
   const finish = useCallback(async () => {
     const id = owner.current;
-    if (!id || !api || !capture.current) return;
+    if (!id || !api || !capture.current || finishingRef.current) return;
+    finishingRef.current = true;
     const current = capture.current;
     try {
       await new Promise<void>((resolve, reject) => {
@@ -53,9 +55,13 @@ export function useStudio() {
       if (owner.current !== id) return;
       await api.finish(id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not finish recording');
+      if (owner.current === id) setError(e instanceof Error ? e.message : 'Could not finish recording');
       await api.cancel(id).catch(() => undefined);
-    } finally { if (owner.current === id) owner.current = null; }
+    } finally {
+      cleanup();
+      finishingRef.current = false;
+      if (owner.current === id) owner.current = null;
+    }
   }, [api, cleanup]);
 
   const start = useCallback(async (mode: VoiceMode) => {
@@ -65,13 +71,17 @@ export function useStudio() {
     setError(null);
     const token = ++generation.current;
     let id: string | undefined;
+    let acquired: MediaStream | null = null;
+    let audioContext: AudioContext | null = null;
     try {
       ({ id } = await api.start(mode));
       if (token !== generation.current) { await api.cancel(id); return; }
       owner.current = id;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true } });
+      acquired = stream;
       if (token !== generation.current) { stream.getTracks().forEach((track) => track.stop()); return; }
       const context = new AudioContext({ sampleRate: 16_000 });
+      audioContext = context;
       if (context.sampleRate !== 16_000) { stream.getTracks().forEach((track) => track.stop()); await context.close(); throw new Error('This audio device does not support 16 kHz capture.'); }
       try { await context.audioWorklet.addModule(new URL('pcm-worklet.js', window.location.href)); }
       catch (e) { stream.getTracks().forEach((track) => track.stop()); await context.close(); throw e; }
@@ -80,12 +90,22 @@ export function useStudio() {
       capture.current = { stream, context, node };
       pending.current = Promise.resolve();
       chunkError.current = null;
+      let queued = 0;
+      const failCapture = (message: string) => {
+        chunkError.current = new Error(message);
+        setError(message);
+        void cancel();
+      };
+      stream.getAudioTracks()[0]?.addEventListener('ended', () => failCapture('Microphone disconnected. Reconnect it and try again.'), { once: true });
+      node.onprocessorerror = () => failCapture('Audio processing stopped. Please start a new recording.');
       node.port.onmessage = (event: MessageEvent<ArrayBuffer | 'flushed'>) => {
         if (event.data === 'flushed') { flushDone.current?.(); flushDone.current = null; return; }
         const data = event.data;
+        if (chunkError.current || owner.current !== id) return;
+        if (++queued > 32) { failCapture('Audio transfer fell behind. Please try a shorter recording.'); return; }
         pending.current = pending.current.then(async () => {
           if (owner.current === id && !chunkError.current) await api.chunk(id, data);
-        }).catch((e: unknown) => { chunkError.current = e instanceof Error ? e : new Error('Audio transfer failed'); });
+        }).catch(() => failCapture('Audio transfer failed. Please start a new recording.')).finally(() => { queued--; });
       };
       const source = context.createMediaStreamSource(stream);
       const meter = context.createAnalyser();
@@ -98,11 +118,13 @@ export function useStudio() {
       timer.current = setTimeout(() => { void finish(); }, 119_000);
     } catch (e) {
       cleanup();
+      acquired?.getTracks().forEach((track) => track.stop());
+      void audioContext?.close().catch(() => undefined);
       if (id) await api.cancel(id).catch(() => undefined);
       if (owner.current === id) owner.current = null;
       if (token === generation.current) setError(e instanceof Error ? e.message : 'Could not start microphone');
     } finally { startingRef.current = false; setStarting(false); }
-  }, [api, cleanup, finish]);
+  }, [api, cleanup, finish, cancel]);
 
   useEffect(() => {
     if (!api) return;

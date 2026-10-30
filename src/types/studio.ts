@@ -22,6 +22,7 @@ export type StudioState = {
   sessionId: string | null;
   draft: Draft | null;
   error: string | null;
+  recordingMs?: number;
 };
 export interface StudioApi {
   state(): Promise<StudioState>;

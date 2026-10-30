@@ -84,7 +84,7 @@ export function registerStudio(): void {
     const nextMode = voiceMode(value);
     const session = sessions.begin(event.sender.id);
     mode = nextMode;
-    publish({ phase: 'recording', sessionId: session.id, error: null });
+    publish({ phase: 'recording', sessionId: session.id, error: null, recordingMs: 0 });
     const captured = await getFrontmostApp().catch(() => null);
     sessions.require(event.sender.id, session.id);
     destination = captured;
@@ -98,6 +98,9 @@ export function registerStudio(): void {
       throw new MiraError('action_invalid', 'Invalid PCM audio chunk');
     }
     sessions.append(event.sender.id, text(value.id, 'Session ID', 64), Buffer.from(value.data));
+    const session = sessions.require(event.sender.id, String(value.id));
+    const recordingMs = Math.round(session.audio.durationMs(16000));
+    if (recordingMs - (state.recordingMs ?? 0) >= 200) publish({ recordingMs });
   });
   handle('mira:studio:finish', async (event, id: unknown) => {
     const session = sessions.process(event.sender.id, text(id, 'Session ID', 64));
@@ -129,6 +132,7 @@ export function registerStudio(): void {
     destination = null; // Typing in Mira must never capture Mira itself as a destination.
     publish({ phase: 'refining', sessionId: session.id, error: null });
     try { await prepare(original, session); }
+    catch (error) { if (!session.controller.signal.aborted) throw error; }
     finally { if (sessions.release(session.id)) publish({ phase: 'idle', sessionId: null }); }
   }, ['workspace']);
   handle('mira:studio:edit', (_event, payload: unknown) => {
