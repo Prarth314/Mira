@@ -1,39 +1,48 @@
 # Mira
 
-Voice for Cursor and Claude Code.
+Voice prompts for developer tools. Mira is an Electron + React app that transcribes speech locally with Whisper, processes instructions through Anthropic or OpenAI, and routes prompts into the focused developer tool.
 
-Press ⌥Space anywhere on macOS, speak your prompt, and Mira pastes the cleaned-up text into whatever dev tool is in front of you. On-device Whisper for transcription, your own Anthropic or OpenAI key for the brains. The app lives in the background as a non-activating overlay so it doesn't steal focus from the editor you were just in.
+The canonical project is [Prarth314/Mira](https://github.com/Prarth314/Mira). The original [Mira-AI](https://github.com/Prarth314/Mira-AI) prototype has been consolidated here with its Git history and attribution preserved. See [the consolidation report](docs/consolidation.md) for the comparison and next steps.
 
-> **Status:** rebuild in progress on `feat/multi-provider-voice`. The starting point was an AI-Studio export wired to Gemini Live; the rewrite swaps that for a typed provider abstraction with on-device speech, then narrows the product surface to a single wedge: voice → frontmost dev tool. See `PLAN.md` and the design doc in `~/.gstack/projects/Prarth314-Mira/`.
+## Current implementation
 
-## What it does today
+- Toggle the recording overlay with Option+Space on macOS; press it again to finish recording.
+- Local transcription through an installed `whisper-cli` binary.
+- Anthropic and OpenAI adapters, with API keys stored through Electron's encrypted `safeStorage`.
+- Prompt cleanup and routing for Cursor, VS Code, Claude Desktop, Warp, iTerm and Terminal. Claude Code running inside a terminal receives the terminal's paste.
+- Optional automatic submission, plus typed actions for app launch, URLs, volume, screen description and speech.
+- Settings, permission reporting, system telemetry and unit tests.
 
-- Hold ⌥Space (configurable later) anywhere on macOS — small overlay pops up at bottom-center, doesn't steal focus
-- Whisper.cpp transcribes locally
-- Active provider (default: Claude Sonnet) decides what to do with your utterance
-- For coding prompts (the default behavior): cleans up "um/uh/so" filler, normalizes a small dictionary of jargon ("clawed code" → "Claude Code"), then pastes into the focused dev tool
-- Per-app paste adapter knows about Cursor (Cmd+L → chat panel), Claude Code / Warp / iTerm / Terminal (paste into terminal), VSCode (Cmd+I)
-- Optional auto-send (Return after paste)
-- Fallback actions still wired (`launch_app`, `open_url`, `set_volume`, `describe_screen`, `speak`) but de-emphasized in the prompt
+**Platform status:** native prompt routing, app launch, volume and speech currently target macOS. Windows/Linux parity and packaged installers are unfinished. A successful renderer build does not establish working desktop automation on those platforms.
 
 ## Run locally
 
-**Prerequisites:** Node.js 20+, macOS (Windows/Linux later), `whisper-cli` on PATH (`brew install whisper-cpp`).
+Prerequisites: Node.js 22.12+ (Node 24 recommended), macOS for native actions, and `whisper-cli` on PATH (`brew install whisper-cpp`).
 
 ```bash
-npm install
-cp .env.local.example .env.local   # not strictly needed; keys go through the Settings panel + safeStorage
+npm ci
 npm run dev
 ```
 
-`npm run dev` starts Vite on `:5173` and Electron together.
+Vite runs at `http://127.0.0.1:5173` and Electron opens alongside it. Enter an Anthropic or OpenAI API key in **Settings**. Environment files are not loaded by the current keystore; no `.env.local` copy is required. Provider selection is available under Advanced.
 
-The Whisper model (`ggml-base.en.bin`, ~140 MB) downloads on first transcription with SHA-256 verification; lives in `~/Library/Application Support/Mira/models/`.
+The first transcription downloads the approximately 148 MB Whisper model into the app's user-data directory and verifies its SHA-256. First use requires a network connection. Transcription is local; transcripts and any explicitly captured images are sent to the selected provider.
 
-## Scripts
+## Verification
 
-- `npm run dev` — dev mode (Vite + Electron, hot reload, dev tools detached)
-- `npm run build` — production renderer build (multi-entry: main app + overlay)
-- `npm run start` — run packaged app against the production build
-- `npm run typecheck` — `tsc --noEmit`
-- `npm test` — vitest unit suite
+```bash
+npm run typecheck
+npm test
+npm run build
+```
+
+`npm start` opens Electron using the production renderer build; it does not create an installer. `npm run test:watch` watches unit tests.
+
+## Project origins
+
+Originally built collaboratively as a hackathon prototype. Continued development is maintained by Prarth Gupta with the original teammates' permission.
+
+- Original team repository: [aashrithtutuku02-stack/startupOS](https://github.com/aashrithtutuku02-stack/startupOS).
+- Original commit history and authorship are preserved. The prototype was a team effort; this project does not claim sole authorship.
+
+Historical implementation planning lives in [PLAN.md](PLAN.md), with supporting artifacts in [docs/research](docs/research/README.md). The consolidation report records the current follow-up priorities.
