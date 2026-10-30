@@ -3,8 +3,11 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { ProviderName } from '../types/provider';
 import { MiraError } from '../types/MiraError';
+import { atomicWrite, serialQueue } from './atomic-file';
+import { providerName, text } from './validation';
 
 type KeystoreFile = Partial<Record<ProviderName, string>>;
+const enqueue = serialQueue();
 
 function keystorePath(): string {
   return path.join(app.getPath('userData'), 'keys.enc');
@@ -44,8 +47,7 @@ async function writeAll(data: KeystoreFile): Promise<void> {
     );
   }
   const enc = safeStorage.encryptString(JSON.stringify(data));
-  await fs.mkdir(path.dirname(keystorePath()), { recursive: true });
-  await fs.writeFile(keystorePath(), enc);
+  await atomicWrite(keystorePath(), enc);
 }
 
 export async function getKey(provider: ProviderName): Promise<string | null> {
@@ -54,11 +56,14 @@ export async function getKey(provider: ProviderName): Promise<string | null> {
 }
 
 export async function setKey(provider: ProviderName, value: string): Promise<void> {
-  const trimmed = value.trim();
-  const all = await loadAll();
-  if (trimmed) all[provider] = trimmed;
-  else delete all[provider];
-  await writeAll(all);
+  providerName(provider);
+  const trimmed = text(value, 'API key', 4096, true).trim();
+  return enqueue(async () => {
+    const all = await loadAll();
+    if (trimmed) all[provider] = trimmed;
+    else delete all[provider];
+    await writeAll(all);
+  });
 }
 
 export async function status(): Promise<Record<ProviderName, boolean>> {

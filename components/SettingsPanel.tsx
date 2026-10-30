@@ -33,8 +33,14 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
     setBusy(true);
     setMsg(null);
     try {
-      if (anthropicKey.trim()) await window.mira.keys.save('anthropic', anthropicKey.trim());
-      if (openaiKey.trim()) await window.mira.keys.save('openai', openaiKey.trim());
+      if (anthropicKey.trim()) {
+        const result = await window.mira.keys.save('anthropic', anthropicKey.trim());
+        if (!result.ok) throw new Error(result.error?.message ?? 'Could not save Anthropic key');
+      }
+      if (openaiKey.trim()) {
+        const result = await window.mira.keys.save('openai', openaiKey.trim());
+        if (!result.ok) throw new Error(result.error?.message ?? 'Could not save OpenAI key');
+      }
       await window.mira.provider.set(provider);
       await window.mira.settings.update({
         defaultProvider: provider,

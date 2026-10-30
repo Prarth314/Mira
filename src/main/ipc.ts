@@ -1,4 +1,6 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron';
+import { handle } from './security';
+import { record, text, providerName, imageBuffers } from './validation';
 import { Conversation } from './conversation';
 import { createProvider } from '../providers';
 import { getKey, setKey, status } from './keystore';
@@ -46,6 +48,7 @@ let selectedProvider: ProviderName = 'anthropic';
 
 async function ensureProvider(): Promise<Provider> {
   if (selected && selected.name === selectedProvider) return selected.provider;
+  selectedProvider = (await getSettings()).defaultProvider;
   const apiKey = await getKey(selectedProvider);
   if (!apiKey) {
     throw new MiraError('key_missing', `API key for ${selectedProvider} is not configured`);
@@ -117,11 +120,11 @@ async function runChatTurn(
 }
 
 export function registerIpc(): void {
-  ipcMain.handle('mira:keys:status', async () => status());
+  handle('mira:keys:status', async () => status());
 
-  ipcMain.handle('mira:keys:save', async (_e, payload: { provider: ProviderName; key: string }) => {
+  handle('mira:keys:save', async (_e, payload: { provider: ProviderName; key: string }) => {
     try {
-      await setKey(payload.provider, payload.key);
+      await setKey(providerName(record(payload).provider), text(record(payload).key, 'API key', 4096, true));
       selected = null;
       return { ok: true };
     } catch (e) {
@@ -129,47 +132,49 @@ export function registerIpc(): void {
     }
   });
 
-  ipcMain.handle('mira:provider:get', async () => ({ name: selectedProvider }));
+  handle('mira:provider:get', async () => { selectedProvider = (await getSettings()).defaultProvider; return { name: selectedProvider }; });
 
-  ipcMain.handle('mira:provider:set', async (_e, payload: { name: ProviderName }) => {
-    selectedProvider = payload.name;
+  handle('mira:provider:set', async (_e, payload: { name: ProviderName }) => {
+    selectedProvider = providerName(record(payload).name);
+    await updateSettings({ defaultProvider: selectedProvider });
     selected = null;
     conversation.reset();
     return { ok: true };
   });
 
-  ipcMain.handle('mira:conversation:reset', async () => {
+  handle('mira:conversation:reset', async () => {
     conversation.reset();
     return { ok: true };
   });
 
-  ipcMain.handle(
+  handle(
     'mira:chat',
     async (
       _e,
       payload: { userText: string; images?: ArrayBuffer[] },
     ): Promise<ChatTurnResult> => {
-      const imagesBuf = payload.images?.map((ab) => Buffer.from(ab));
-      return runChatTurn(payload.userText, imagesBuf);
+      const imagesBuf = imageBuffers(record(payload).images);
+      return runChatTurn(text(record(payload).userText, 'Prompt'), imagesBuf);
     },
   );
 
-  ipcMain.handle('mira:voice:start', async () => {
+  handle('mira:voice:start', async () => {
     audio.reset();
     return { ok: true };
   });
 
-  ipcMain.handle('mira:voice:chunk', async (_e, chunk: ArrayBuffer) => {
+  handle('mira:voice:chunk', async (_e, chunk: ArrayBuffer) => {
+    if (!(chunk instanceof ArrayBuffer) || chunk.byteLength > 32768) throw new MiraError('action_invalid', 'Invalid audio chunk');
     audio.append(Buffer.from(chunk));
     return { ok: true };
   });
 
-  ipcMain.handle('mira:voice:cancel', async () => {
+  handle('mira:voice:cancel', async () => {
     audio.reset();
     return { ok: true };
   });
 
-  ipcMain.handle(
+  handle(
     'mira:voice:end',
     async (_e, payload?: { images?: ArrayBuffer[] }): Promise<ChatTurnResult> => {
       const pcm = audio.flush();
@@ -185,35 +190,36 @@ export function registerIpc(): void {
       if (!transcript) {
         return { ok: false, error: { kind: 'stt_failed', message: 'no speech detected' } };
       }
-      const imagesBuf = payload?.images?.map((ab) => Buffer.from(ab));
+      const imagesBuf = imageBuffers(payload === undefined ? undefined : record(payload).images);
       const result = await runChatTurn(transcript, imagesBuf);
       return { ...result, transcript };
     },
   );
 
-  ipcMain.handle('mira:tts:cancel', async () => {
+  handle('mira:tts:cancel', async () => {
     ttsCancel();
     return { ok: true };
   });
 
-  ipcMain.handle('mira:tts:speak', async (_e, payload: { text: string }) => {
+  handle('mira:tts:speak', async (_e, payload: { text: string }) => {
     try {
-      await ttsSpeak(payload.text);
+      await ttsSpeak(text(record(payload).text, 'Speech', 4000));
       return { ok: true };
     } catch (e) {
       return { ok: false, error: serializeError(e) };
     }
   });
 
-  ipcMain.handle('mira:permissions:probe', async () => probePermissions());
-  ipcMain.handle('mira:permissions:requestMic', async () => ({ granted: await requestMicrophone() }));
-  ipcMain.handle('mira:permissions:openSettings', async (_e, payload: { what: 'mic' | 'screen' }) => {
+  handle('mira:permissions:probe', async () => probePermissions());
+  handle('mira:permissions:requestMic', async () => ({ granted: await requestMicrophone() }));
+  handle('mira:permissions:openSettings', async (_e, payload: { what: 'mic' | 'screen' }) => {
+    if (record(payload).what !== 'mic' && record(payload).what !== 'screen') throw new MiraError('action_invalid', 'Invalid permission');
     if (payload.what === 'mic') openSettingsForMicrophone();
     else openSettingsForScreen();
     return { ok: true };
   });
 
-  ipcMain.handle('mira:telemetry:read', async () => {
+  handle('mira:telemetry:read', async () => {
     try {
       return { ok: true, data: await readTelemetry() };
     } catch (e) {
@@ -221,9 +227,9 @@ export function registerIpc(): void {
     }
   });
 
-  ipcMain.handle('mira:model:status', async () => modelStatus());
+  handle('mira:model:status', async () => modelStatus());
 
-  ipcMain.handle('mira:model:download', async (e) => {
+  handle('mira:model:download', async (e) => {
     const win = BrowserWindow.fromWebContents(e.sender);
     try {
       const path = await downloadModel((downloaded, total) => {
@@ -235,13 +241,13 @@ export function registerIpc(): void {
     }
   });
 
-  ipcMain.handle('mira:overlay:hide', () => {
+  handle('mira:overlay:hide', () => {
     hideOverlay();
     return { ok: true };
   });
 
-  ipcMain.handle('mira:settings:get', async () => getSettings());
-  ipcMain.handle(
+  handle('mira:settings:get', async () => getSettings());
+  handle(
     'mira:settings:update',
     async (_e, patch: Parameters<typeof updateSettings>[0]) => updateSettings(patch),
   );

@@ -1,17 +1,12 @@
 import { app, BrowserWindow, screen } from 'electron';
 import path from 'node:path';
+import { secureWindow, windowUrl } from './security';
 
 const WIDTH = 460;
 const HEIGHT = 96;
 const MARGIN_BOTTOM = 80;
 
 let overlay: BrowserWindow | null = null;
-
-function urlOrFile(): string | { file: string } {
-  const isDev = process.env.NODE_ENV === 'development';
-  if (isDev) return 'http://localhost:5173/overlay.html';
-  return { file: path.join(app.getAppPath(), 'dist', 'overlay.html') };
-}
 
 function repositionToScreenCenter(win: BrowserWindow): void {
   const cursor = screen.getCursorScreenPoint();
@@ -44,6 +39,7 @@ export function getOrCreateOverlay(): BrowserWindow {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
       preload: path.join(app.getAppPath(), 'dist-electron', 'preload.cjs'),
       backgroundThrottling: false,
     },
@@ -51,9 +47,8 @@ export function getOrCreateOverlay(): BrowserWindow {
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setAlwaysOnTop(true, 'screen-saver');
 
-  const dest = urlOrFile();
-  if (typeof dest === 'string') void win.loadURL(dest);
-  else void win.loadFile(dest.file);
+  secureWindow(win, 'overlay');
+  void win.loadURL(windowUrl('overlay'));
 
   win.on('closed', () => {
     if (overlay === win) overlay = null;
@@ -67,7 +62,7 @@ export function showOverlay(autoRecord: boolean): void {
   const win = getOrCreateOverlay();
   repositionToScreenCenter(win);
   win.showInactive();
-  win.webContents.send(autoRecord ? 'mira:overlay:show' : 'mira:overlay:hide');
+  sendWhenReady(win, autoRecord ? 'mira:overlay:show' : 'mira:overlay:hide');
 }
 
 export function toggleOverlay(): void {
@@ -77,8 +72,16 @@ export function toggleOverlay(): void {
   } else {
     repositionToScreenCenter(win);
     win.showInactive();
-    win.webContents.send('mira:overlay:show');
+    sendWhenReady(win, 'mira:overlay:show');
   }
+}
+
+function sendWhenReady(win: BrowserWindow, channel: string): void {
+  if (win.webContents.isLoading()) {
+    win.webContents.once('did-finish-load', () => {
+      if (!win.isDestroyed()) win.webContents.send(channel);
+    });
+  } else win.webContents.send(channel);
 }
 
 export function hideOverlay(): void {
