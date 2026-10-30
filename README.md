@@ -33,7 +33,7 @@ Your best explanation of a coding task should not disappear between your microph
 | Developer context | Planned opt-in project vocabulary and visible context attachments |
 | Desktop presence | A compact overlay with a full workspace when you need it |
 
-Native automation started on macOS. Windows support and reliable destination handling are being developed. See the [execution tracker](docs/production-roadmap.md) for scope and acceptance gates.
+Native adapters exist for Windows and macOS. Keyboard delivery is reported as **attempted**, because simulated input cannot confirm receipt. Typed drafts use manual delivery; shortcut recordings capture a supported destination. Native-tool certification remains a beta gate. See the [execution tracker](docs/production-roadmap.md).
 
 ## Get started
 
@@ -46,9 +46,17 @@ npm ci
 npm run dev
 ```
 
-Enter a provider key in **Settings** to use cloud processing. The current keystore does not load keys from `.env.local`.
+**Dictate** works without a provider key. **Refine** sends your instruction to the provider you configure in Settings. Keys are not loaded from `.env.local`.
 
-Local speech requires a compatible `whisper-cli` runtime while bundled distribution is being completed. On macOS, developers can install it with `brew install whisper-cpp`. The English model downloads on first use and is verified before use.
+Prepare the pinned speech runtime for development:
+
+```bash
+npm run prepare:speech
+```
+
+Windows x64 uses a checksum-verified upstream binary. macOS builds from pinned source and requires CMake and the Xcode command-line tools. Packaged builds include their speech runtime. Download the verified English model from the workspace before recording.
+
+Use **Ctrl / Cmd + Shift + Space** to toggle recording without opening the workspace. Every recording produces a draft for review. Terminal delivery does not press Enter and rejects control characters and multiline text.
 
 ## Development
 
@@ -56,9 +64,11 @@ Local speech requires a compatible `whisper-cli` runtime while bundled distribut
 npm run typecheck
 npm test
 npm run build
+npm run test:e2e
+npm run package:dir
 ```
 
-Vite serves the renderer on `127.0.0.1:5173`. Electron owns native operations, provider access and secure key storage. Production build and packaging details evolve with the [release tracker](docs/production-roadmap.md).
+Vite serves the renderer on `127.0.0.1:5173`. Electron owns native operations, provider access and secure key storage. `npm run package` creates an internal installer; public signing remains a release gate. CI builds the code on Windows, macOS and Linux; native packaging targets Windows and macOS.
 
 ## Architecture
 
@@ -81,6 +91,7 @@ The renderer does not own provider credentials. Desktop input and provider outpu
 - Local transcription keeps speech recognition on the device.
 - Optional cloud processing sends its input to the selected provider.
 - Never put API keys or private transcripts into issue reports.
+- Drafts remain in memory; raw transcript history is not persisted.
 - Project context, screenshot controls, retention and diagnostic redaction are tracked as explicit release requirements.
 
 Read [SECURITY.md](SECURITY.md) before reporting a sensitive issue.
