@@ -105,6 +105,7 @@ The renderer does not own provider credentials. Desktop input and provider outpu
 - Project context, screenshot controls, retention and diagnostic redaction are tracked as explicit release requirements.
 
 Read [SECURITY.md](SECURITY.md) before reporting a sensitive issue.
+Read [PRIVACY.md](PRIVACY.md) for current audio, context, provider and diagnostic data handling.
 
 ## Building in the open
 

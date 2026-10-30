@@ -12,10 +12,12 @@ import path from 'node:path';
 import { registerIpc } from './ipc';
 import { toggleOverlay, destroyOverlay } from './overlay-window';
 import { handle, isTrustedUrl, secureWindow, windowUrl } from './security';
+import { SpeechScratch } from './speech-scratch';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let initialized = false;
 const isDev = process.env.NODE_ENV === 'development' && !app.isPackaged;
 
 function showMainWindow(): void {
@@ -78,9 +80,14 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (app.isReady()) showMainWindow();
+    if (initialized) showMainWindow();
   });
-  void app.whenReady().then(() => {
+  void app.whenReady().then(async () => {
+    await new SpeechScratch(app.getPath('userData')).cleanup().catch(() => {
+      console.warn(
+        'Speech scratch cleanup unavailable; recording storage will be checked before use.',
+      );
+    });
     registerIpc();
     handle('mira:window:show', () => {
       showMainWindow();
@@ -103,6 +110,7 @@ if (!app.requestSingleInstanceLock()) {
     });
     // Screen capture stays disabled until a user-controlled source picker ships.
     session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => callback({}));
+    initialized = true;
     showMainWindow();
     createTray();
     for (const [shortcut, action] of [
@@ -113,7 +121,9 @@ if (!app.requestSingleInstanceLock()) {
         console.warn(`Shortcut unavailable: ${shortcut}`);
     }
   });
-  app.on('activate', showMainWindow);
+  app.on('activate', () => {
+    if (initialized) showMainWindow();
+  });
   app.on('window-all-closed', () => {
     /* Tray owns app lifetime. */
   });

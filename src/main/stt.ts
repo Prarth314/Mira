@@ -2,11 +2,11 @@ import { app } from 'electron';
 import { spawn } from 'node:child_process';
 import { promises as fs, createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
-import os from 'node:os';
 import path from 'node:path';
 import { MiraError } from '../types/MiraError';
 import { writeInt16PcmAsWav } from './wav';
 import { MODEL } from './model-info';
+import { SpeechScratch } from './speech-scratch';
 
 let cachedBinary: string | null = null;
 let modelReady: Promise<string> | null = null;
@@ -154,7 +154,8 @@ export async function transcribePcm(pcm: Buffer, signal?: AbortSignal): Promise<
       'Download the speech model from the workspace before recording.',
     );
   signal?.throwIfAborted();
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-stt-'));
+  const scratch = new SpeechScratch(app.getPath('userData'));
+  const directory = await scratch.create();
   try {
     const wav = path.join(directory, 'input.wav');
     const output = path.join(directory, 'out');
@@ -190,7 +191,7 @@ export async function transcribePcm(pcm: Buffer, signal?: AbortSignal): Promise<
     signal?.throwIfAborted();
     return (await fs.readFile(`${output}.txt`, 'utf8')).trim();
   } finally {
-    await fs.rm(directory, { recursive: true, force: true });
+    await scratch.remove(directory);
   }
 }
 
