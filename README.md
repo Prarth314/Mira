@@ -1,34 +1,56 @@
-# Mira
+<div align="center">
 
-Voice prompts for developer tools. Mira is an Electron + React app that transcribes speech locally with Whisper, processes instructions through Anthropic or OpenAI, and routes prompts into the focused developer tool.
+![Mira — Your voice. Your tools. Your flow.](docs/assets/mira-banner.svg)
 
-The canonical project is [Prarth314/Mira](https://github.com/Prarth314/Mira). The original [Mira-AI](https://github.com/Prarth314/Mira-AI) prototype has been consolidated here with its Git history and attribution preserved. See [the consolidation report](docs/consolidation.md) for the comparison and next steps.
+[![CI](https://github.com/Prarth314/Mira/actions/workflows/ci.yml/badge.svg)](https://github.com/Prarth314/Mira/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-a78bfa.svg)](LICENSE)
+![Status: development](https://img.shields.io/badge/Status-development-67e8f9)
 
-## Current implementation
+**A voice workspace for developers.**  
+Speak your intent. Preserve the details. Stay in your flow.
 
-- Toggle the recording overlay with Option+Space on macOS; press it again to finish recording.
-- Local transcription through an installed `whisper-cli` binary.
-- Anthropic and OpenAI adapters, with API keys stored through Electron's encrypted `safeStorage`.
-- Prompt cleanup and routing for Cursor, VS Code, Claude Desktop, Warp, iTerm and Terminal. Claude Code running inside a terminal receives the terminal's paste.
-- Optional automatic submission, plus typed actions for app launch, URLs, volume, screen description and speech.
-- Settings, permission reporting, system telemetry and unit tests.
+[Get started](#get-started) · [Architecture](#architecture) · [Roadmap](docs/production-roadmap.md) · [Contribute](CONTRIBUTING.md)
 
-**Platform status:** native prompt routing, app launch, volume and speech currently target macOS. Windows/Linux parity and packaged installers are unfinished. A successful renderer build does not establish working desktop automation on those platforms.
+</div>
 
-## Run locally
+---
 
-Prerequisites: Node.js 22.12+ (Node 24 recommended), macOS for native actions, and `whisper-cli` on PATH (`brew install whisper-cpp`).
+## The idea
+
+Your best explanation of a coding task should not disappear between your microphone and your editor. Mira brings local speech transcription, optional AI refinement, and developer-tool delivery into a focused desktop experience.
+
+> **Release status:** active development. The production roadmap is being implemented in verified increments. Signed installers, native platform certification, and public beta validation are release gates—not completed claims.
+
+## The experience
+
+**Speak → transcribe → inspect → deliver.**
+
+| Capability | Direction |
+| --- | --- |
+| Local speech | Whisper transcription on your device |
+| Your provider | Optional Anthropic or OpenAI processing with your own key |
+| Deliberate delivery | Clear destination, review, cancellation and copy fallback |
+| Developer context | Planned opt-in project vocabulary and visible context attachments |
+| Desktop presence | A compact overlay with a full workspace when you need it |
+
+Native automation started on macOS. Windows support and reliable destination handling are being developed. See the [execution tracker](docs/production-roadmap.md) for scope and acceptance gates.
+
+## Get started
+
+Use **Node.js 24** and npm.
 
 ```bash
+git clone https://github.com/Prarth314/Mira.git
+cd Mira
 npm ci
 npm run dev
 ```
 
-Vite runs at `http://127.0.0.1:5173` and Electron opens alongside it. Enter an Anthropic or OpenAI API key in **Settings**. Environment files are not loaded by the current keystore; no `.env.local` copy is required. Provider selection is available under Advanced.
+Enter a provider key in **Settings** to use cloud processing. The current keystore does not load keys from `.env.local`.
 
-The first transcription downloads the approximately 148 MB Whisper model into the app's user-data directory and verifies its SHA-256. First use requires a network connection. Transcription is local; transcripts and any explicitly captured images are sent to the selected provider.
+Local speech requires a compatible `whisper-cli` runtime while bundled distribution is being completed. On macOS, developers can install it with `brew install whisper-cpp`. The English model downloads on first use and is verified before use.
 
-## Verification
+## Development
 
 ```bash
 npm run typecheck
@@ -36,13 +58,45 @@ npm test
 npm run build
 ```
 
-`npm start` opens Electron using the production renderer build; it does not create an installer. `npm run test:watch` watches unit tests.
+Vite serves the renderer on `127.0.0.1:5173`. Electron owns native operations, provider access and secure key storage. Production build and packaging details evolve with the [release tracker](docs/production-roadmap.md).
 
-## Project origins
+## Architecture
 
-Originally built collaboratively as a hackathon prototype. Continued development is maintained by Prarth Gupta with the original teammates' permission.
+```text
+Desktop workspace + recording overlay
+                 │
+          Preload / typed IPC
+                 │
+         Electron main process
+          ├── Voice lifecycle + local Whisper
+          ├── Optional provider processing
+          ├── Settings + encrypted keys
+          └── Native delivery adapters
+```
 
-- Original team repository: [aashrithtutuku02-stack/startupOS](https://github.com/aashrithtutuku02-stack/startupOS).
-- Original commit history and authorship are preserved. The prototype was a team effort; this project does not claim sole authorship.
+The renderer does not own provider credentials. Desktop input and provider output require explicit policy; building the UI alone does not validate native behavior.
 
-Historical implementation planning lives in [PLAN.md](PLAN.md), with supporting artifacts in [docs/research](docs/research/README.md). The consolidation report records the current follow-up priorities.
+## Privacy, by design
+
+- Local transcription keeps speech recognition on the device.
+- Optional cloud processing sends its input to the selected provider.
+- Never put API keys or private transcripts into issue reports.
+- Project context, screenshot controls, retention and diagnostic redaction are tracked as explicit release requirements.
+
+Read [SECURITY.md](SECURITY.md) before reporting a sensitive issue.
+
+## Building in the open
+
+Small commits, observable behavior, honest platform support. We value reliable cancellation, recoverable drafts and accurate technical instructions as much as visual polish.
+
+Read the [contribution guide](CONTRIBUTING.md), [production roadmap](docs/production-roadmap.md), and [repository consolidation report](docs/consolidation.md).
+
+## Origins & license
+
+Mira began as a collaborative hackathon prototype in [startupOS](https://github.com/aashrithtutuku02-stack/startupOS). Continued development is maintained by Prarth Gupta with the original teammates' permission. The [Mira-AI](https://github.com/Prarth314/Mira-AI) history and original team attribution are preserved here. The original prototype was a team effort.
+
+Released under the [MIT License](LICENSE). Third-party components retain their own licenses.
+
+---
+
+<div align="center"><sub>Built for the space between a thought and a working instruction.</sub></div>

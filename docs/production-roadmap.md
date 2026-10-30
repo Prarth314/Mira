@@ -1,0 +1,42 @@
+# Production execution tracker
+
+This is the active roadmap. Historical plans and research remain under `PLAN.md` and `docs/research/`. A checked item means implemented and verified as described, not independently certified production-ready.
+
+## Release contract
+
+Deliver a desktop voice workspace: record → transcribe → inspect/refine → choose destination → deliver. Windows first; macOS follows the same acceptance gates. English first. Local transcription; optional user-key cloud processing. No accounts, billing, autonomous shell execution, or unsupported platform claims in v1.
+
+## Milestones
+
+1. **Repository and build foundation:** MIT license, attribution, readable documentation, compiled main/preload, local styling, pinned tooling, CI, internal packaging.
+2. **Trusted core:** runtime-validated IPC, trusted sender/window roles, permissions, navigation restrictions, owned sessions, cancellation, bounded resources, atomic settings and keys.
+3. **Useful voice beta:** self-contained speech runtime, model lifecycle, microphone setup, explicit draft review, safe destination adapters, recovery and local dictation fallback.
+4. **Distinctive beta:** opt-in project index, scoped and visible context, original/refined prompt comparison, reliable editor integration, evaluated technical vocabulary.
+5. **Release candidate:** native acceptance matrix, performance baselines, accessibility, signed installers, authenticated update path, migrations and failed-update recovery.
+6. **Public release:** observed beta use, corrected recurring defects, download page, privacy documentation, support process and maintenance policy.
+
+## Feasibility gates
+
+- Install/run a packaged Windows app without Node or source files.
+- Prove recording, transcription, destination identity and delivery outside development mode.
+- Benchmark minimum supported hardware before promising latency or accuracy.
+- Compare a real workflow with the tester's current tool before expanding modes.
+- Validate repository vocabulary on held-out examples; preserve ambiguous originals.
+
+## Quality gates
+
+- No known critical security defects; malformed IPC cannot invoke capabilities.
+- No cross-window session mixing or stale-result delivery after acknowledged cancellation.
+- No blind retries of uncertain delivery; distinguish prepared, attempted and confirmed.
+- Terminal paste never automatically executes in the initial release.
+- No raw audio/transcripts/keys in default diagnostics.
+- Every advertised OS/tool combination passes native acceptance tests.
+- Clean install, upgrade, settings migration, interrupted update and uninstall are exercised.
+
+## External prerequisites
+
+Signed public releases require publisher credentials. macOS behavior requires real macOS testing. Product validation requires consenting beta users. These are release gates, not tasks that can be marked complete from Windows unit tests.
+
+## Evidence
+
+Record the exact commit, OS/app versions, hardware, sample size, failure definitions and commands for each release candidate. Tests must measure transcript meaning, technical terms, cancellation, routing, latency and resource use. Do not infer external receipt from a successfully issued keyboard shortcut.
