@@ -22,7 +22,7 @@ export function useStudio() {
   } | null>(null);
   const pending = useRef<Promise<void>>(Promise.resolve());
   const chunkError = useRef<Error | null>(null);
-  const flushDone = useRef<(() => void) | null>(null);
+  const flushDone = useRef<{ id: string; resolve: () => void } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cleanup = useCallback((id?: string) => {
@@ -30,7 +30,15 @@ export function useStudio() {
     if (timer.current) clearTimeout(timer.current);
     const current = capture.current;
     capture.current = null;
+    if (current && flushDone.current?.id === current.id) {
+      flushDone.current.resolve();
+      flushDone.current = null;
+    }
     current?.stream.getTracks().forEach((track) => track.stop());
+    if (current) {
+      current.node.port.onmessage = null;
+      current.node.port.close();
+    }
     current?.node.disconnect();
     void current?.context.close().catch(() => undefined);
     setAnalyser(null);
@@ -58,9 +66,12 @@ export function useStudio() {
           () => reject(new Error('Audio capture did not finish. Please retry.')),
           1000,
         );
-        flushDone.current = () => {
-          clearTimeout(timeout);
-          resolve();
+        flushDone.current = {
+          id,
+          resolve: () => {
+            clearTimeout(timeout);
+            resolve();
+          },
         };
         current.node.port.postMessage('flush');
       });
@@ -133,6 +144,7 @@ export function useStudio() {
         pending.current = Promise.resolve();
         chunkError.current = null;
         let queued = 0;
+        let acceptingAudio = true;
         const failCapture = (message: string) => {
           if (owner.current !== id) return;
           chunkError.current = new Error(message);
@@ -150,12 +162,15 @@ export function useStudio() {
           failCapture('Audio processing stopped. Please start a new recording.');
         node.port.onmessage = (event: MessageEvent<ArrayBuffer | 'flushed'>) => {
           if (event.data === 'flushed') {
-            flushDone.current?.();
-            flushDone.current = null;
+            acceptingAudio = false;
+            if (flushDone.current && flushDone.current.id === id) {
+              flushDone.current.resolve();
+              flushDone.current = null;
+            }
             return;
           }
           const data = event.data;
-          if (chunkError.current || owner.current !== id) return;
+          if (!acceptingAudio || chunkError.current || owner.current !== id) return;
           if (++queued > 32) {
             failCapture('Audio transfer fell behind. Please try a shorter recording.');
             return;

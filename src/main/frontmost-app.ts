@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { MiraError } from '../types/MiraError';
 import type { Destination } from '../types/studio';
+import { systemPreferences } from 'electron';
 
 export type FrontmostApp = Destination;
 
@@ -77,6 +78,12 @@ $processInfo = Get-Process -Id $targetProcess
     return JSON.parse(result) as FrontmostApp;
   }
   if (process.platform === 'darwin') {
+    if (!systemPreferences.isTrustedAccessibilityClient(false)) {
+      throw new MiraError(
+        'permission_denied',
+        'Native routing requires Accessibility permission. Local recording and manual copy remain available.',
+      );
+    }
     const result = await nativeScript(
       'osascript',
       [

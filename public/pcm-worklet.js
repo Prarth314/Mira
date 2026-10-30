@@ -3,8 +3,10 @@ class MiraPcmProcessor extends AudioWorkletProcessor {
     super();
     this.samples = new Int16Array(4096);
     this.offset = 0;
+    this.active = true;
     this.port.onmessage = (event) => {
       if (event.data === 'flush') {
+        this.active = false;
         this.flush();
         this.port.postMessage('flushed');
       }
@@ -17,6 +19,7 @@ class MiraPcmProcessor extends AudioWorkletProcessor {
     this.offset = 0;
   }
   process(inputs) {
+    if (!this.active) return false;
     const input = inputs[0]?.[0];
     if (input)
       for (const value of input) {
