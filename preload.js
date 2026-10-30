@@ -34,6 +34,8 @@ contextBridge.exposeInMainWorld('mira', {
     hide: () => ipcRenderer.invoke('mira:window:hide'),
   },
   overlay: {
+    ready: () => ipcRenderer.invoke('mira:overlay:ready'),
+    open: () => ipcRenderer.invoke('mira:overlay:open'),
     hide: () => ipcRenderer.invoke('mira:overlay:hide'),
     onShow: (callback) => on('mira:overlay:show', callback),
     onToggle: (callback) => on('mira:overlay:toggle', callback),

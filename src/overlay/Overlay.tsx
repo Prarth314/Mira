@@ -14,6 +14,7 @@ const Overlay: React.FC = () => {
       if (state.phase === 'recording') void finish();
       else if (state.phase === 'idle') void start('dictate');
     });
+    void window.mira?.overlay.ready();
     return () => {
       off?.();
       toggle?.();

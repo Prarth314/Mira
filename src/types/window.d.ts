@@ -121,6 +121,8 @@ declare global {
         hide: () => Promise<{ ok: boolean }>;
       };
       overlay: {
+        ready: () => Promise<void>;
+        open: () => Promise<void>;
         hide: () => Promise<{ ok: boolean }>;
         onShow: (cb: () => void) => () => void;
         onHide: (cb: () => void) => () => void;

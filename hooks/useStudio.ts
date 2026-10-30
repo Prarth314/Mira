@@ -9,6 +9,7 @@ export function useStudio() {
   const [error, setError] = useState<string | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [starting, setStarting] = useState(false);
+  const [ownsSession, setOwnsSession] = useState(false);
   const owner = useRef<string | null>(null);
   const startingRef = useRef(false);
   const finishingRef = useRef<string | null>(null);
@@ -40,6 +41,8 @@ export function useStudio() {
     cleanup();
     const id = owner.current;
     owner.current = null;
+    startingRef.current = false;
+    setOwnsSession(false);
     if (id && api) await api.cancel(id).catch(() => undefined);
     setStarting(false);
   }, [api, cleanup]);
@@ -73,7 +76,10 @@ export function useStudio() {
     } finally {
       cleanup(id);
       if (finishingRef.current === id) finishingRef.current = null;
-      if (owner.current === id) owner.current = null;
+      if (owner.current === id) {
+        owner.current = null;
+        setOwnsSession(false);
+      }
     }
   }, [api, cleanup]);
 
@@ -94,6 +100,7 @@ export function useStudio() {
           return;
         }
         owner.current = id;
+        setOwnsSession(true);
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: { channelCount: 1, echoCancellation: true },
         });
@@ -190,20 +197,26 @@ export function useStudio() {
             },
           );
         });
+        if (token !== generation.current) return;
         timer.current = setTimeout(() => {
           void finish();
         }, 119_000);
       } catch (e) {
-        cleanup();
+        if (token === generation.current) cleanup(id);
         acquired?.getTracks().forEach((track) => track.stop());
         void audioContext?.close().catch(() => undefined);
         if (id) await api.cancel(id).catch(() => undefined);
-        if (owner.current === id) owner.current = null;
+        if (owner.current === id) {
+          owner.current = null;
+          setOwnsSession(false);
+        }
         if (token === generation.current)
           setError(e instanceof Error ? e.message : 'Could not start microphone');
       } finally {
-        startingRef.current = false;
-        setStarting(false);
+        if (token === generation.current) {
+          startingRef.current = false;
+          setStarting(false);
+        }
       }
     },
     [api, cleanup, finish, cancel],
@@ -235,6 +248,6 @@ export function useStudio() {
     start,
     finish,
     cancel,
-    ownsSession: owner.current !== null,
+    ownsSession,
   };
 }

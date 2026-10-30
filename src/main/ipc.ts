@@ -6,11 +6,13 @@ import { getSettings, updateSettings, resetPreferences } from './settings';
 import { downloadModel, modelStatus, cancelModelDownload } from './stt';
 import { probePermissions, requestMicrophone, openSettingsForMicrophone } from './permissions';
 import { registerStudio } from './studio';
-import { hideOverlay } from './overlay-window';
+import { hideOverlay, toggleOverlay, markOverlayReady } from './overlay-window';
 import { registerProject } from './project';
 import { registerDiagnostics } from './diagnostics';
 
 export function registerIpc(): void {
+  handle('mira:overlay:ready', (event) => markOverlayReady(event.sender.id), ['overlay']);
+  handle('mira:overlay:open', () => toggleOverlay(), ['workspace']);
   registerStudio();
   registerProject();
   registerDiagnostics();

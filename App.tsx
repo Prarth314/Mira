@@ -238,6 +238,17 @@ const App: React.FC = () => {
                     </button>
                   )}
                 </div>
+                <button
+                  className="text-button"
+                  disabled={!api || active || busy}
+                  onClick={() => {
+                    void api?.overlay
+                      .open()
+                      .catch(() => studio.setError('Could not open the compact recorder.'));
+                  }}
+                >
+                  Open compact recorder
+                </button>
               </div>
               <div className="typed-input">
                 <label htmlFor="instruction" className="text-xs text-zinc-500">

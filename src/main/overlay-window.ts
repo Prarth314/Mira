@@ -7,6 +7,8 @@ const HEIGHT = 96;
 const MARGIN_BOTTOM = 80;
 
 let overlay: BrowserWindow | null = null;
+let ready = false;
+let pendingChannel: string | null = null;
 
 function repositionToScreenCenter(win: BrowserWindow): void {
   const cursor = screen.getCursorScreenPoint();
@@ -19,6 +21,8 @@ function repositionToScreenCenter(win: BrowserWindow): void {
 
 export function getOrCreateOverlay(): BrowserWindow {
   if (overlay && !overlay.isDestroyed()) return overlay;
+  ready = false;
+  pendingChannel = null;
   const win = new BrowserWindow({
     width: WIDTH,
     height: HEIGHT,
@@ -68,6 +72,11 @@ export function showOverlay(autoRecord: boolean): void {
 export function toggleOverlay(): void {
   const win = getOrCreateOverlay();
   if (win.isVisible()) {
+    if (!ready) {
+      pendingChannel = null;
+      win.hide();
+      return;
+    }
     win.webContents.send('mira:overlay:toggle');
   } else {
     repositionToScreenCenter(win);
@@ -77,14 +86,19 @@ export function toggleOverlay(): void {
 }
 
 function sendWhenReady(win: BrowserWindow, channel: string): void {
-  if (win.webContents.isLoading()) {
-    win.webContents.once('did-finish-load', () => {
-      if (!win.isDestroyed()) win.webContents.send(channel);
-    });
-  } else win.webContents.send(channel);
+  if (!ready) pendingChannel = channel;
+  else win.webContents.send(channel);
+}
+
+export function markOverlayReady(sender: number): void {
+  if (!overlay || overlay.isDestroyed() || overlay.webContents.id !== sender) return;
+  ready = true;
+  if (pendingChannel && overlay.isVisible()) overlay.webContents.send(pendingChannel);
+  pendingChannel = null;
 }
 
 export function hideOverlay(): void {
+  pendingChannel = null;
   if (overlay && !overlay.isDestroyed() && overlay.isVisible()) {
     overlay.hide();
   }
