@@ -48,35 +48,46 @@ public static class MiraWindows {
 "@
 `;
 
-export function powershell(script: string): Promise<string> {
-  return nativeScript('powershell.exe', [
-    '-NoLogo',
-    '-NoProfile',
-    '-NonInteractive',
-    '-EncodedCommand',
-    Buffer.from(`$ErrorActionPreference = 'Stop';\n${script}`, 'utf16le').toString('base64'),
-  ]);
+export function powershell(script: string, signal?: AbortSignal): Promise<string> {
+  return nativeScript(
+    'powershell.exe',
+    [
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-EncodedCommand',
+      Buffer.from(`$ErrorActionPreference = 'Stop';\n${script}`, 'utf16le').toString('base64'),
+    ],
+    signal,
+  );
 }
 
-export async function getFrontmostApp(): Promise<FrontmostApp> {
+export async function getFrontmostApp(signal?: AbortSignal): Promise<FrontmostApp> {
   if (process.platform === 'win32') {
-    const result = await powershell(`${WIN32}
+    const result = await powershell(
+      `${WIN32}
 $handle = [MiraWindows]::GetForegroundWindow()
 [uint32]$targetProcess = 0
 [void][MiraWindows]::GetWindowThreadProcessId($handle, [ref]$targetProcess)
 $processInfo = Get-Process -Id $targetProcess
 @{ name = $processInfo.ProcessName; bundleId = $null; windowId = $handle.ToInt64().ToString(); processId = $targetProcess } | ConvertTo-Json -Compress
-`);
+`,
+      signal,
+    );
     return JSON.parse(result) as FrontmostApp;
   }
   if (process.platform === 'darwin') {
-    const result = await nativeScript('osascript', [
-      '-e',
-      `tell application "System Events"
+    const result = await nativeScript(
+      'osascript',
+      [
+        '-e',
+        `tell application "System Events"
 set frontApp to first application process whose frontmost is true
 return (name of frontApp) & "|" & (bundle identifier of frontApp) & "|" & (unix id of frontApp)
 end tell`,
-    ]);
+      ],
+      signal,
+    );
     const [name, bundleId, pid] = result.split('|');
     return { name, bundleId: bundleId || null, processId: Number(pid) };
   }

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, clipboard } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { SessionCoordinator, type VoiceSession } from './session';
-import { handle } from './security';
+import { handle, windowRole } from './security';
 import { record, text } from './validation';
 import { getFrontmostApp } from './frontmost-app';
 import { routeDevPrompt, classifyApp } from './dev-tool-router';
@@ -10,15 +10,23 @@ import { getSettings } from './settings';
 import { getKey } from './keystore';
 import { createProvider } from '../providers';
 import { MiraError } from '../types/MiraError';
-import type { Destination, Draft, StudioState, VoiceMode } from '../types/studio';
+import type {
+  ContextAttachment,
+  Destination,
+  Draft,
+  StudioState,
+  VoiceMode,
+} from '../types/studio';
 import { selectedContext, contextUnchanged } from './project';
 import { formatPrompt } from './project-index';
 import { refinementLosses } from './refinement-policy';
 
 const sessions = new SessionCoordinator();
 let state: StudioState = { phase: 'idle', sessionId: null, draft: null, error: null };
-let destination: Destination | null = null;
-let mode: VoiceMode = 'dictate';
+const metadata = new Map<
+  string,
+  { mode: VoiceMode; destination: Promise<Destination | null>; context: ContextAttachment[] }
+>();
 const attempted = new Set<string>();
 
 function publish(patch: Partial<StudioState>): void {
@@ -43,9 +51,12 @@ function requireDraft(id: unknown): Draft {
 }
 
 async function prepare(original: string, session: VoiceSession): Promise<void> {
-  const currentMode = mode;
-  const currentDestination = destination;
-  const context = selectedContext();
+  const current = metadata.get(session.id);
+  if (!current) throw new MiraError('action_invalid', 'Session is no longer available');
+  const currentMode = current.mode;
+  const currentDestination = await current.destination;
+  session.controller.signal.throwIfAborted();
+  const context = current.context;
   let prompt = original;
   let error: string | null = null;
   if (currentMode === 'refine') {
@@ -93,29 +104,31 @@ async function prepare(original: string, session: VoiceSession): Promise<void> {
 export function registerStudio(): void {
   app.on('web-contents-created', (_event, contents) => {
     const cancelOwner = () => {
-      if (sessions.cancelOwner(contents.id)) publish({ phase: 'idle', sessionId: null });
+      if (sessions.cancelOwner(contents.id)) {
+        if (state.sessionId) metadata.delete(state.sessionId);
+        publish({ phase: 'idle', sessionId: null });
+      }
     };
     contents.once('destroyed', cancelOwner);
     contents.on('render-process-gone', cancelOwner);
   });
 
   handle('mira:studio:get', () => state);
-  handle('mira:studio:start', async (event, value: unknown) => {
+  handle('mira:studio:start', (event, value: unknown) => {
     if (state.phase !== 'idle')
       throw new MiraError('action_invalid', 'Another operation is active');
     const nextMode = voiceMode(value);
     const session = sessions.begin(event.sender.id);
-    mode = nextMode;
+    const destination =
+      windowRole(event.sender.id) === 'overlay'
+        ? getFrontmostApp(session.controller.signal)
+            .then((target) =>
+              target.processId !== process.pid && classifyApp(target) !== 'unknown' ? target : null,
+            )
+            .catch(() => null)
+        : Promise.resolve(null);
+    metadata.set(session.id, { mode: nextMode, destination, context: selectedContext() });
     publish({ phase: 'recording', sessionId: session.id, error: null, recordingMs: 0 });
-    const captured = await getFrontmostApp().catch(() => null);
-    sessions.require(event.sender.id, session.id);
-    destination = captured;
-    if (
-      destination?.processId === process.pid ||
-      (destination && classifyApp(destination) === 'unknown')
-    )
-      destination = null;
-    sessions.require(event.sender.id, session.id);
     return { id: session.id };
   });
   handle('mira:studio:chunk', (event, payload: unknown) => {
@@ -150,11 +163,14 @@ export function registerStudio(): void {
         });
       }
     } finally {
+      metadata.delete(session.id);
       if (sessions.release(session.id)) publish({ phase: 'idle', sessionId: null });
     }
   });
   handle('mira:studio:cancel', (event, id: unknown) => {
-    sessions.cancel(event.sender.id, text(id, 'Session ID', 64));
+    const sessionId = text(id, 'Session ID', 64);
+    sessions.cancel(event.sender.id, sessionId);
+    metadata.delete(sessionId);
     publish({ phase: 'idle', sessionId: null, error: null });
   });
   handle(
@@ -166,14 +182,18 @@ export function registerStudio(): void {
       if (state.phase !== 'idle')
         throw new MiraError('action_invalid', 'Another operation is active');
       const session = sessions.begin(event.sender.id);
-      mode = nextMode;
-      destination = null; // Typing in Mira must never capture Mira itself as a destination.
+      metadata.set(session.id, {
+        mode: nextMode,
+        destination: Promise.resolve(null),
+        context: selectedContext(),
+      });
       publish({ phase: 'refining', sessionId: session.id, error: null });
       try {
         await prepare(original, session);
       } catch (error) {
         if (!session.controller.signal.aborted) throw error;
       } finally {
+        metadata.delete(session.id);
         if (sessions.release(session.id)) publish({ phase: 'idle', sessionId: null });
       }
     },

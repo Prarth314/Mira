@@ -5,6 +5,9 @@ import { MiraError } from '../types/MiraError';
 
 type Role = 'workspace' | 'overlay';
 const windows = new Map<number, { role: Role; url: string }>();
+export function windowRole(id: number): Role | undefined {
+  return windows.get(id)?.role;
+}
 
 export function windowUrl(role: Role): string {
   const page = role === 'workspace' ? 'index.html' : 'overlay.html';
