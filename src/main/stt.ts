@@ -125,16 +125,18 @@ async function ensureModel(onProgress?: DownloadProgress): Promise<string> {
   return modelReady;
 }
 
-export async function transcribePcm(pcm: Buffer): Promise<string> {
+export async function transcribePcm(pcm: Buffer, signal?: AbortSignal): Promise<string> {
+  signal?.throwIfAborted();
   if (pcm.length === 0) return '';
   const binary = await findWhisperBinary();
   const model = await ensureModel();
+  signal?.throwIfAborted();
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-stt-'));
   const wavPath = path.join(tmpDir, 'input.wav');
   const outBase = path.join(tmpDir, 'out');
   try {
     await writeInt16PcmAsWav(pcm, wavPath);
-    await runWhisper(binary, ['-m', model, '-f', wavPath, '-otxt', '-of', outBase, '-nt']);
+    await runWhisper(binary, ['-m', model, '-f', wavPath, '-otxt', '-of', outBase, '-nt'], signal);
     const text = await fs.readFile(`${outBase}.txt`, 'utf8');
     return text.trim();
   } finally {
@@ -142,9 +144,9 @@ export async function transcribePcm(pcm: Buffer): Promise<string> {
   }
 }
 
-function runWhisper(binary: string, args: string[]): Promise<void> {
+function runWhisper(binary: string, args: string[], signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(binary, args);
+    const child = spawn(binary, args, { signal, windowsHide: true, timeout: 120_000 });
     let stderr = '';
     child.stderr.on('data', (b: Buffer) => (stderr += b.toString()));
     child.on('error', (e) => reject(new MiraError('stt_failed', `whisper spawn: ${e.message}`)));

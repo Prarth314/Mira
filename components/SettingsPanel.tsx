@@ -9,7 +9,6 @@ type Props = {
 const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
   const [keyStatus, setKeyStatus] = useState<Record<ProviderName, boolean> | null>(null);
   const [provider, setProvider] = useState<ProviderName>('anthropic');
-  const [autoSend, setAutoSend] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [anthropicKey, setAnthropicKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
@@ -21,7 +20,7 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
     void window.mira.keys.status().then(setKeyStatus);
     void window.mira.provider.get().then(({ name }) => setProvider(name));
     void window.mira.settings.get().then((s) => {
-      setAutoSend(s.autoSend);
+
       setShowAdvanced(s.showAdvancedProviders);
     });
   }, [open]);
@@ -44,14 +43,14 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
       await window.mira.provider.set(provider);
       await window.mira.settings.update({
         defaultProvider: provider,
-        autoSend,
+        autoSend: false,
         showAdvancedProviders: showAdvanced,
       });
       const status = await window.mira.keys.status();
       setKeyStatus(status);
       setAnthropicKey('');
       setOpenaiKey('');
-      setMsg('Saved. Conversation history was cleared.');
+      setMsg('Saved. Provider processing is optional; dictation stays local.');
     } catch (e) {
       setMsg(`Error: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -61,7 +60,7 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
 
   async function switchProvider(name: ProviderName) {
     setProvider(name);
-    if (window.mira) await window.mira.provider.set(name);
+
   }
 
   return (
@@ -82,20 +81,6 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
             Close
           </button>
         </div>
-
-        <Field label="Auto-send to dev tool">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoSend}
-              onChange={(e) => setAutoSend(e.target.checked)}
-              className="accent-blue-400"
-            />
-            <span className="text-[12px] text-zinc-300">
-              Press Return after pasting (otherwise just paste, you press Return)
-            </span>
-          </label>
-        </Field>
 
         <Field label="Anthropic API key (Claude — recommended for code)">
           <input
@@ -161,7 +146,7 @@ const SettingsPanel: React.FC<Props> = ({ open, onClose }) => {
         </button>
 
         <p className="text-[11px] text-zinc-500 text-center">
-          Keys encrypted at rest in your OS keychain. Mira works with Cursor, Claude Code, Warp, iTerm, Terminal, and VSCode.
+          Keys use OS-backed encrypted storage. Refine mode sends your instruction to the selected provider.
         </p>
       </div>
     </div>

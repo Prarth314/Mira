@@ -62,7 +62,7 @@ export class AnthropicProvider implements Provider {
 
   constructor(opts: { apiKey: string; model?: string }) {
     if (!opts.apiKey) throw new MiraError('key_missing', 'Anthropic API key not set');
-    this.client = new Anthropic({ apiKey: opts.apiKey });
+    this.client = new Anthropic({ apiKey: opts.apiKey, maxRetries: 0, timeout: 30_000 });
     this.model = opts.model ?? DEFAULT_MODEL;
   }
 
@@ -82,11 +82,11 @@ export class AnthropicProvider implements Provider {
           system: input.systemPrompt,
           messages,
           tools,
-        });
+        }, { signal: input.signal });
       } catch (e: unknown) {
         throw mapAnthropicError(e);
       }
-    });
+    }, undefined, input.signal);
 
     const toolCalls: ToolCall[] = [];
     let text: string | null = null;

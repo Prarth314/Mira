@@ -29,10 +29,10 @@ describe('classifyApp', () => {
     expect(classifyApp({ name: 'Code', bundleId: 'com.microsoft.vscode' })).toBe('vscode');
   });
 
-  it('classifies Claude (desktop) as claude-code', () => {
+  it('classifies Claude (desktop) as claude-desktop', () => {
     expect(
       classifyApp({ name: 'Claude', bundleId: 'com.anthropic.claudefordesktop' }),
-    ).toBe('claude-code');
+    ).toBe('claude-desktop');
   });
 
   it('returns unknown for arbitrary apps', () => {

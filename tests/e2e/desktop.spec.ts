@@ -23,6 +23,21 @@ test('production build opens with an isolated preload and settings bridge', asyn
     expect(bridge.keys).toEqual({ anthropic: false, openai: false });
     expect(bridge.settings?.defaultProvider).toBe('anthropic');
     expect(bridge.node).toBe('undefined');
+    await page.getByLabel('Prefer to type?').fill('Add regression tests for expired sessions.');
+    await page.getByRole('button', { name: 'Prepare instruction' }).click();
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue('Add regression tests for expired sessions.');
+    await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+    await expect(page.getByText('Copied. Paste it wherever you are working.')).toBeVisible();
+    const copy = await app.evaluate(async ({ clipboard }) => clipboard.readText());
+    expect(copy).toBe('Add regression tests for expired sessions.');
+    await page.screenshot({ path: 'test-results/workspace.png', fullPage: true });
+    const invalidProviderRejected = await page.evaluate(async () => {
+      try { await window.mira!.provider.set('unknown' as 'openai'); return false; }
+      catch { return true; }
+    });
+    expect(invalidProviderRejected).toBe(true);
+    await page.getByRole('button', { name: 'Discard draft' }).click();
+    await expect(page.getByLabel('Prepared prompt')).toHaveCount(0);
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
   } finally {

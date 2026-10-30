@@ -4,6 +4,7 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   { ignores: ['node_modules/**', 'dist/**', 'dist-electron/**', 'release/**', 'playwright-report/**', 'test-results/**'] },
   js.configs.recommended,
+  { files: ['public/pcm-worklet.js'], languageOptions: { globals: { AudioWorkletProcessor: 'readonly', registerProcessor: 'readonly' } } },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],

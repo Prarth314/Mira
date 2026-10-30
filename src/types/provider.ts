@@ -31,6 +31,7 @@ export type Tool = {
 };
 
 export type ChatRequest = {
+  signal?: AbortSignal;
   messages: Msg[];
   tools: Tool[];
   images?: Buffer[];

@@ -1,44 +1,59 @@
 import { spawn } from 'node:child_process';
 import { MiraError } from '../types/MiraError';
+import type { Destination } from '../types/studio';
 
-export type FrontmostApp = {
-  name: string;
-  bundleId: string | null;
-};
+export type FrontmostApp = Destination;
 
-const SCRIPT = `
-tell application "System Events"
-  set frontApp to first application process whose frontmost is true
-  set appName to name of frontApp
-  try
-    set bid to bundle identifier of frontApp
-  on error
-    set bid to ""
-  end try
-  return appName & "|" & bid
-end tell
-`.trim();
-
-export async function getFrontmostApp(): Promise<FrontmostApp> {
-  if (process.platform !== 'darwin') {
-    throw new MiraError('action_invalid', 'frontmost-app detection is macOS-only in v0.1');
-  }
+export async function nativeScript(command: string, args: string[], signal?: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn('osascript', ['-e', SCRIPT]);
+    const child = spawn(command, args, { windowsHide: true, signal, timeout: 10_000 });
     let out = '';
     let err = '';
-    child.stdout.on('data', (b: Buffer) => (out += b.toString()));
-    child.stderr.on('data', (b: Buffer) => (err += b.toString()));
-    child.on('error', (e) =>
-      reject(new MiraError('action_invalid', `osascript spawn: ${e.message}`)),
-    );
-    child.on('close', (code) => {
-      if (code !== 0) {
-        reject(new MiraError('action_invalid', `osascript exited ${code}: ${err.trim()}`));
-        return;
-      }
-      const [name, bundleId] = out.trim().split('|');
-      resolve({ name: name ?? '', bundleId: bundleId || null });
-    });
+    child.stdout.on('data', (b: Buffer) => { out = (out + b.toString()).slice(-32_768); });
+    child.stderr.on('data', (b: Buffer) => { err = (err + b.toString()).slice(-1024); });
+    child.on('error', () => reject(new MiraError('action_invalid', 'Native integration unavailable')));
+    child.on('close', (code) => code === 0 ? resolve(out.trim()) : reject(
+      new MiraError('action_invalid', `Native integration failed (${code}): ${err.slice(0, 200)}`),
+    ));
   });
+}
+
+export const WIN32 = `
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public static class MiraWindows {
+ [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+ [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+ [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+ [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr hWnd);
+}
+"@
+`;
+
+export function powershell(script: string): Promise<string> {
+  return nativeScript('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand',
+    Buffer.from(`$ErrorActionPreference = 'Stop';\n${script}`, 'utf16le').toString('base64')]);
+}
+
+export async function getFrontmostApp(): Promise<FrontmostApp> {
+  if (process.platform === 'win32') {
+    const result = await powershell(`${WIN32}
+$handle = [MiraWindows]::GetForegroundWindow()
+[uint32]$targetProcess = 0
+[void][MiraWindows]::GetWindowThreadProcessId($handle, [ref]$targetProcess)
+$processInfo = Get-Process -Id $targetProcess
+@{ name = $processInfo.ProcessName; bundleId = $null; windowId = $handle.ToInt64().ToString(); processId = $targetProcess } | ConvertTo-Json -Compress
+`);
+    return JSON.parse(result) as FrontmostApp;
+  }
+  if (process.platform === 'darwin') {
+    const result = await nativeScript('osascript', ['-e', `tell application "System Events"
+set frontApp to first application process whose frontmost is true
+return (name of frontApp) & "|" & (bundle identifier of frontApp) & "|" & (unix id of frontApp)
+end tell`]);
+    const [name, bundleId, pid] = result.split('|');
+    return { name, bundleId: bundleId || null, processId: Number(pid) };
+  }
+  throw new MiraError('action_invalid', 'Native delivery is not available on this platform');
 }

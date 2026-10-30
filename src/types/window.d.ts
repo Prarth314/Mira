@@ -1,5 +1,6 @@
 import type { ProviderName, ChatResponse } from './provider';
 import type { Action } from './actions';
+import type { StudioApi } from './studio';
 
 export type ActuatorResult =
   | { ok: true; message: string }
@@ -48,6 +49,11 @@ declare global {
       close: () => void;
     };
     mira?: {
+      studio: StudioApi;
+      window: {
+        show: () => Promise<{ ok: boolean }>;
+        hide: () => Promise<{ ok: boolean }>;
+      };
       keys: {
         status: () => Promise<Record<ProviderName, boolean>>;
         save: (

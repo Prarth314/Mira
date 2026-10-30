@@ -66,7 +66,7 @@ export class OpenAIProvider implements Provider {
 
   constructor(opts: { apiKey: string; model?: string }) {
     if (!opts.apiKey) throw new MiraError('key_missing', 'OpenAI API key not set');
-    this.client = new OpenAI({ apiKey: opts.apiKey });
+    this.client = new OpenAI({ apiKey: opts.apiKey, maxRetries: 0, timeout: 30_000 });
     this.model = opts.model ?? DEFAULT_MODEL;
   }
 
@@ -87,12 +87,12 @@ export class OpenAIProvider implements Provider {
           model: this.model,
           messages,
           tools,
-          max_tokens: 1024,
-        });
+          max_completion_tokens: 2048,
+        }, { signal: input.signal });
       } catch (e: unknown) {
         throw mapOpenAIError(e);
       }
-    });
+    }, undefined, input.signal);
 
     const choice = resp.choices[0];
     const text = choice?.message?.content ?? null;
