@@ -85,7 +85,7 @@ export class OpenAIProvider implements Provider {
               model: this.model,
               messages,
               tools,
-              max_completion_tokens: 2048,
+              max_completion_tokens: 8192,
             },
             { signal: input.signal },
           );
@@ -98,6 +98,12 @@ export class OpenAIProvider implements Provider {
     );
 
     const choice = resp.choices[0];
+    if (choice?.finish_reason === 'length') {
+      throw new MiraError(
+        'provider_server',
+        'Provider output was truncated; original instruction must be preserved',
+      );
+    }
     const text = choice?.message?.content ?? null;
     const toolCalls: ToolCall[] = (choice?.message?.tool_calls ?? [])
       .filter(

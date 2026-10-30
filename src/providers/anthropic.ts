@@ -80,7 +80,7 @@ export class AnthropicProvider implements Provider {
           return await this.client.messages.create(
             {
               model: this.model,
-              max_tokens: 1024,
+              max_tokens: 4096,
               system: input.systemPrompt,
               messages,
               tools,
@@ -96,6 +96,12 @@ export class AnthropicProvider implements Provider {
     );
 
     const toolCalls: ToolCall[] = [];
+    if (resp.stop_reason === 'max_tokens') {
+      throw new MiraError(
+        'provider_server',
+        'Provider output was truncated; original instruction must be preserved',
+      );
+    }
     let text: string | null = null;
     for (const block of resp.content) {
       if (block.type === 'text') {
