@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { FolderOpen, Link2, X, FileText } from 'lucide-react';
 import type { ContextAttachment } from '../src/types/studio';
+import type { ProjectAlias, ProjectStatus } from '../src/types/vocabulary';
 
 export default function ProjectPanel({
   disabled,
   onError,
+  revision,
 }: {
   disabled: boolean;
   onError: (message: string) => void;
+  revision?: string;
 }) {
   const api = window.mira?.project;
   const [project, setProject] = useState<{ name: string; count: number } | null>(null);
@@ -15,17 +18,41 @@ export default function ProjectPanel({
   const [files, setFiles] = useState<string[]>([]);
   const [selected, setSelected] = useState<ContextAttachment[]>([]);
   const [busy, setBusy] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [aliases, setAliases] = useState<ProjectAlias[]>([]);
+  const [phrase, setPhrase] = useState('');
+  const [target, setTarget] = useState('');
+
+  function update(result: ProjectStatus) {
+    setProject(result.project);
+    setSelected(result.selected);
+    setEnabled(result.vocabulary.enabled);
+    setAliases(result.vocabulary.aliases);
+  }
+
+  async function vocabularyOperation(operation: () => Promise<ProjectStatus>) {
+    setBusy(true);
+    try {
+      update(await operation());
+    } catch (error) {
+      try {
+        if (api) update(await api.status());
+      } catch {
+        setEnabled(false);
+      }
+      onError(error instanceof Error ? error.message : 'Could not update project vocabulary.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!api) return;
     void api
       .status()
-      .then((result) => {
-        setProject(result.project);
-        setSelected(result.selected);
-      })
+      .then(update)
       .catch(() => onError('Could not inspect project connection.'));
-  }, [api, onError]);
+  }, [api, onError, revision]);
   useEffect(() => {
     if (!api || !project) return;
     const timer = setTimeout(() => {
@@ -42,8 +69,10 @@ export default function ProjectPanel({
     setBusy(true);
     try {
       const result = await api.connect();
-      setProject(result.project);
-      setSelected(result.selected);
+      update(result);
+      setPhrase('');
+      setTarget('');
+      setQuery('');
     } catch {
       onError('Could not connect that folder. Select an accessible local project.');
     } finally {
@@ -91,6 +120,8 @@ export default function ProjectPanel({
                 setProject(null);
                 setSelected([]);
                 setFiles([]);
+                setEnabled(false);
+                setAliases([]);
               });
             }}
           >
@@ -109,6 +140,105 @@ export default function ProjectPanel({
           </button>
         )}
       </div>
+      {project && (
+        <div className="vocabulary-settings">
+          <label className="vocabulary-toggle">
+            <input
+              type="checkbox"
+              checked={enabled}
+              disabled={disabled || busy}
+              onChange={(event) => {
+                const next = event.target.checked;
+                setEnabled(next);
+                void vocabularyOperation(() => api!.vocabulary(next));
+              }}
+            />
+            Project-aware dictation
+          </label>
+          <p>
+            Suggest indexed filenames after transcription. Nothing is replaced automatically. Enable
+            again when reconnecting a project.
+          </p>
+          {enabled && (
+            <details className="vocabulary-manager">
+              <summary>Project pronunciations · {aliases.length} saved</summary>
+              <p>
+                Saved only on this device for this folder. Adding a phrase does not read or attach
+                that file.
+              </p>
+              <label htmlFor="alias-phrase">Spoken phrase</label>
+              <input
+                id="alias-phrase"
+                value={phrase}
+                maxLength={100}
+                disabled={disabled || busy}
+                placeholder="For example: use studio"
+                onChange={(event) => setPhrase(event.target.value)}
+              />
+              <label htmlFor="alias-search">Find a vocabulary file</label>
+              <input
+                id="alias-search"
+                value={query}
+                maxLength={200}
+                disabled={disabled || busy}
+                placeholder="Search filenames…"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <label htmlFor="alias-target">Vocabulary file</label>
+              <select
+                id="alias-target"
+                value={target}
+                disabled={disabled || busy}
+                onChange={(event) => setTarget(event.target.value)}
+              >
+                <option value="">Choose a file</option>
+                {[...new Set([...(target ? [target] : []), ...files])].map((file) => (
+                  <option key={file} value={file}>
+                    {file}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="secondary-button"
+                disabled={disabled || busy || !phrase.trim() || !target}
+                onClick={() => {
+                  void vocabularyOperation(() => api!.alias(phrase, target));
+                }}
+              >
+                Save pronunciation
+              </button>
+              {aliases.map((alias) => (
+                <div className="alias-row" key={alias.phrase}>
+                  <span>
+                    <strong>{alias.phrase}</strong> → <code>{alias.path}</code>
+                  </span>
+                  <button
+                    className="text-button"
+                    disabled={disabled || busy}
+                    aria-label={`Edit pronunciation ${alias.phrase}`}
+                    onClick={() => {
+                      setPhrase(alias.phrase);
+                      setTarget(alias.path);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="text-button"
+                    disabled={disabled || busy}
+                    aria-label={`Remove pronunciation ${alias.phrase}`}
+                    onClick={() => {
+                      void vocabularyOperation(() => api!.alias(alias.phrase, ''));
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </details>
+          )}
+        </div>
+      )}
       {project && (
         <details className="context-browser">
           <summary>

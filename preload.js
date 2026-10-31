@@ -50,12 +50,16 @@ contextBridge.exposeInMainWorld('mira', {
     cancel: (id) => ipcRenderer.invoke('mira:studio:cancel', id),
     prepare: (prompt, mode) => ipcRenderer.invoke('mira:studio:prepare', { prompt, mode }),
     edit: (id, prompt) => ipcRenderer.invoke('mira:studio:edit', { id, prompt }),
+    correct: (id, suggestionId, path, remember) =>
+      ipcRenderer.invoke('mira:studio:correct', { id, suggestionId, path, remember }),
     copy: (id) => ipcRenderer.invoke('mira:studio:copy', id),
     deliver: (id) => ipcRenderer.invoke('mira:studio:deliver', id),
     discard: (id) => ipcRenderer.invoke('mira:studio:discard', id),
   },
   project: {
     status: () => ipcRenderer.invoke('mira:project:status'),
+    vocabulary: (enabled) => ipcRenderer.invoke('mira:project:vocabulary', enabled),
+    alias: (phrase, path) => ipcRenderer.invoke('mira:project:alias', { phrase, path }),
     connect: () => ipcRenderer.invoke('mira:project:connect'),
     search: (query) => ipcRenderer.invoke('mira:project:search', query),
     select: (paths) => ipcRenderer.invoke('mira:project:select', { paths }),

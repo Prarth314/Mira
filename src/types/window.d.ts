@@ -1,6 +1,7 @@
 import type { ProviderName, ChatResponse } from './provider';
 import type { Action } from './actions';
 import type { StudioApi, ContextAttachment } from './studio';
+import type { ProjectStatus } from './vocabulary';
 
 export type ActuatorResult =
   { ok: true; message: string } | { ok: false; error: { kind: string; message: string } };
@@ -49,14 +50,10 @@ declare global {
         copy: () => Promise<void>;
       };
       project: {
-        status: () => Promise<{
-          project: { name: string; count: number } | null;
-          selected: ContextAttachment[];
-        }>;
-        connect: () => Promise<{
-          project: { name: string; count: number } | null;
-          selected: ContextAttachment[];
-        }>;
+        status: () => Promise<ProjectStatus>;
+        connect: () => Promise<ProjectStatus>;
+        vocabulary: (enabled: boolean) => Promise<ProjectStatus>;
+        alias: (phrase: string, path: string) => Promise<ProjectStatus>;
         search: (query: string) => Promise<string[]>;
         select: (paths: string[]) => Promise<ContextAttachment[]>;
         disconnect: () => Promise<void>;

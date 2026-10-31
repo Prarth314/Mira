@@ -832,3 +832,93 @@ textarea {
   line-height: 1.8;
   color: #b4b8ca;
 }
+.vocabulary-settings,
+.terminology-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #a78bfa30;
+  border-radius: 12px;
+  background: #a78bfa08;
+  color: #ded0ff;
+  font-size: 12px;
+}
+.vocabulary-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+}
+.vocabulary-toggle input {
+  accent-color: #a78bfa;
+  width: 16px;
+  height: 16px;
+}
+.vocabulary-settings p,
+.terminology-panel p {
+  color: #aeb4c6;
+  line-height: 1.7;
+  margin: 8px 0;
+}
+.vocabulary-manager {
+  margin-top: 12px;
+}
+.vocabulary-manager summary {
+  cursor: pointer;
+  padding: 6px 0;
+}
+.vocabulary-manager > label {
+  display: block;
+  margin: 12px 0 6px;
+}
+.vocabulary-manager > input,
+.vocabulary-manager select {
+  display: block;
+  width: 100%;
+  background: #090a10;
+  color: #ddd8ed;
+  border: 1px solid #ffffff25;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.alias-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.alias-row span {
+  flex: 1;
+  min-width: 150px;
+  overflow-wrap: anywhere;
+}
+.term-suggestion {
+  border-top: 1px solid #ffffff16;
+  margin-top: 12px;
+  padding-top: 8px;
+}
+.term-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.term-actions button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+  max-width: 100%;
+}
+.constraint-warning {
+  border-left: 3px solid #fbbf24;
+  padding: 12px;
+  margin-top: 12px;
+  color: #fde68a;
+  font-size: 12px;
+}
+.constraint-warning p {
+  color: #d9cda8;
+  line-height: 1.7;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}

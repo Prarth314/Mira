@@ -17,6 +17,7 @@ import {
 import SettingsPanel from './components/SettingsPanel';
 import ProjectPanel from './components/ProjectPanel';
 import AudioVisualizer from './components/AudioVisualizer';
+import TerminologyReview from './components/TerminologyReview';
 import { useStudio } from './hooks/useStudio';
 import type { VoiceMode } from './src/types/studio';
 
@@ -145,7 +146,11 @@ const App: React.FC = () => {
               {studio.error || state.error}
             </div>
           )}
-          <ProjectPanel disabled={active || busy} onError={studio.setError} />
+          <ProjectPanel
+            disabled={active || busy}
+            onError={studio.setError}
+            revision={draft?.prompt}
+          />
           <div className="studio-grid">
             <section className="surface capture-card" aria-label="Capture an instruction">
               <div className="card-heading">
@@ -303,12 +308,16 @@ const App: React.FC = () => {
                     maxLength={16000}
                     disabled={active || busy}
                   />
-                  {draft.mode === 'refine' && (
-                    <details className="original-transcript">
-                      <summary>View original instruction</summary>
-                      <p>{draft.original}</p>
-                    </details>
-                  )}
+                  <TerminologyReview
+                    draft={draft}
+                    review={review}
+                    disabled={active || busy}
+                    run={perform}
+                  />
+                  <details className="original-transcript">
+                    <summary>View original instruction</summary>
+                    <p>{draft.original}</p>
+                  </details>
                   {!!draft.context?.length && (
                     <details className="original-transcript">
                       <summary>Attached context · {draft.context.length} files</summary>

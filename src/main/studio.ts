@@ -17,7 +17,9 @@ import type {
   StudioState,
   VoiceMode,
 } from '../types/studio';
-import { selectedContext, contextUnchanged } from './project';
+import { selectedContext, contextUnchanged, projectVocabulary, rememberAlias } from './project';
+import { suggestTerms } from './vocabulary';
+import type { VocabularySnapshot } from '../types/vocabulary';
 import { formatPrompt } from './project-index';
 import { refinementLosses } from './refinement-policy';
 
@@ -25,9 +27,24 @@ const sessions = new SessionCoordinator();
 let state: StudioState = { phase: 'idle', sessionId: null, draft: null, error: null };
 const metadata = new Map<
   string,
-  { mode: VoiceMode; destination: Promise<Destination | null>; context: ContextAttachment[] }
+  {
+    mode: VoiceMode;
+    destination: Promise<Destination | null>;
+    context: ContextAttachment[];
+    vocabulary: VocabularySnapshot | null;
+  }
 >();
 const attempted = new Set<string>();
+let draftVocabulary: VocabularySnapshot | null = null;
+
+function terminology(prompt: string) {
+  return draftVocabulary
+    ? {
+        projectName: draftVocabulary.name,
+        suggestions: suggestTerms(prompt, draftVocabulary),
+      }
+    : undefined;
+}
 
 function publish(patch: Partial<StudioState>): void {
   state = { ...state, ...patch };
@@ -86,6 +103,7 @@ async function prepare(original: string, session: VoiceSession): Promise<void> {
     }
   }
   sessions.require(session.owner, session.id);
+  draftVocabulary = current.vocabulary;
   publish({
     draft: {
       id: randomUUID(),
@@ -96,6 +114,8 @@ async function prepare(original: string, session: VoiceSession): Promise<void> {
       createdAt: new Date().toISOString(),
       delivery: 'prepared',
       context,
+      terminology: terminology(prompt),
+      reviewWarnings: refinementLosses(original, prompt),
     },
     error,
   });
@@ -127,7 +147,12 @@ export function registerStudio(): void {
             )
             .catch(() => null)
         : Promise.resolve(null);
-    metadata.set(session.id, { mode: nextMode, destination, context: selectedContext() });
+    metadata.set(session.id, {
+      mode: nextMode,
+      destination,
+      context: selectedContext(),
+      vocabulary: projectVocabulary(),
+    });
     publish({ phase: 'recording', sessionId: session.id, error: null, recordingMs: 0 });
     return { id: session.id };
   });
@@ -186,6 +211,7 @@ export function registerStudio(): void {
         mode: nextMode,
         destination: Promise.resolve(null),
         context: selectedContext(),
+        vocabulary: projectVocabulary(),
       });
       publish({ phase: 'refining', sessionId: session.id, error: null });
       try {
@@ -204,14 +230,59 @@ export function registerStudio(): void {
     (_event, payload: unknown) => {
       const value = record(payload);
       const draft = requireDraft(value.id);
+      const prompt = text(value.prompt, 'Prompt');
       publish({
         draft: {
           ...draft,
-          prompt: text(value.prompt, 'Prompt'),
+          prompt,
+          terminology: terminology(prompt),
+          reviewWarnings: refinementLosses(draft.original, prompt),
           delivery: attempted.has(draft.id) ? 'attempted' : 'prepared',
           error: undefined,
         },
       });
+    },
+    ['workspace'],
+  );
+  handle(
+    'mira:studio:correct',
+    async (_event, payload: unknown) => {
+      const value = record(payload);
+      const draft = requireDraft(value.id);
+      const scope = draftVocabulary;
+      if (!scope || scope.projectId !== projectVocabulary()?.projectId)
+        throw new MiraError(
+          'action_invalid',
+          'Reconnect the original project and enable vocabulary.',
+        );
+      if (typeof value.remember !== 'boolean')
+        throw new MiraError('action_invalid', 'Choose whether to remember this pronunciation.');
+      const suggestion = suggestTerms(draft.prompt, scope).find(
+        (item) => item.id === value.suggestionId,
+      );
+      const file = text(value.path, 'Project file', 1024);
+      if (!suggestion || !suggestion.candidates.includes(file))
+        throw new MiraError('action_invalid', 'This suggestion changed. Review the current draft.');
+      const prompt = text(
+        draft.prompt.slice(0, suggestion.start) + file + draft.prompt.slice(suggestion.end),
+        'Prompt',
+      );
+      publish({ phase: 'delivering' });
+      try {
+        if (value.remember) await rememberAlias(scope.projectId, suggestion.phrase, file);
+        publish({
+          draft: {
+            ...draft,
+            prompt,
+            terminology: terminology(prompt),
+            reviewWarnings: refinementLosses(draft.original, prompt),
+            delivery: attempted.has(draft.id) ? 'attempted' : 'prepared',
+            error: undefined,
+          },
+        });
+      } finally {
+        publish({ phase: 'idle' });
+      }
     },
     ['workspace'],
   );
@@ -281,6 +352,7 @@ export function registerStudio(): void {
     'mira:studio:discard',
     (_event, id: unknown) => {
       requireDraft(id);
+      draftVocabulary = null;
       publish({ draft: null, error: null });
     },
     ['workspace'],

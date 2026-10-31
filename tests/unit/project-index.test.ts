@@ -23,6 +23,8 @@ describe('explicit project context', () => {
     const index = new ProjectIndex();
     expect(await index.connect(root)).toMatchObject({ count: 1 });
     expect(index.search('auth')).toEqual(['src/auth.ts']);
+    expect(index.vocabulary()?.files).toEqual(['src/auth.ts']);
+    expect(index.vocabulary()?.projectId).not.toContain(root);
     for (const name of ['.env', 'credentials.json', 'ignored.ts', '../outside.ts']) {
       await expect(index.attach([name])).rejects.toThrow();
     }
@@ -35,6 +37,7 @@ describe('explicit project context', () => {
     await fs.writeFile(path.join(root, 'src', 'auth.ts'), 'changed');
     expect(await index.unchanged(files)).toBe(false);
     index.disconnect();
+    expect(index.vocabulary()).toBeNull();
     expect(index.search('')).toEqual([]);
     await expect(index.attach(['src/auth.ts'])).rejects.toThrow();
   });

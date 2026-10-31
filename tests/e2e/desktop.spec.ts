@@ -81,6 +81,10 @@ test('production build opens with an isolated preload and settings bridge', asyn
     const project = path.join(profile, 'project');
     await mkdir(project);
     await writeFile(path.join(project, 'auth.ts'), 'export const sessionTTL = 300;');
+    await mkdir(path.join(project, 'hooks'));
+    await mkdir(path.join(project, 'other'));
+    await writeFile(path.join(project, 'hooks', 'useStudio.ts'), 'export const studio = true;');
+    await writeFile(path.join(project, 'other', 'useStudio.ts'), 'export const alternate = true;');
     await writeFile(path.join(project, '.env'), 'PRIVATE=do-not-share');
     await app.evaluate(({ dialog }, folder) => {
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] });
@@ -95,6 +99,107 @@ test('production build opens with an isolated preload and settings bridge', asyn
     const contextualCopy = await app.evaluate(async ({ clipboard }) => clipboard.readText());
     expect(contextualCopy).toContain('export const sessionTTL = 300;');
     expect(contextualCopy).not.toContain('PRIVATE=');
+    expect(
+      await page.evaluate(async () => (await window.mira!.studio.state()).draft!.terminology),
+    ).toBeUndefined();
+    await page.getByLabel('Project-aware dictation', { exact: true }).check();
+    await page
+      .getByLabel('Prefer to type?')
+      .fill('Fix use studio dot tee ess, but do not change 300.');
+    await page.getByRole('button', { name: 'Prepare instruction' }).click();
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue(
+      'Fix use studio dot tee ess, but do not change 300.',
+    );
+    const terms = page.getByRole('region', { name: 'Project-aware review' });
+    await expect(terms.getByText('ambiguous: choose a file', { exact: false })).toBeVisible();
+    const vocabularyAccessibility = await new AxeBuilder({ page })
+      .setLegacyMode()
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    expect(
+      vocabularyAccessibility.violations.map((item) => ({
+        id: item.id,
+        nodes: item.nodes.map((node) => node.target),
+      })),
+    ).toEqual([]);
+    await page.screenshot({ path: 'test-results/project-aware-review.png', fullPage: true });
+    await terms.screenshot({ path: 'test-results/project-aware-terms.png' });
+    await terms.getByLabel('Remember accepted pronunciations for this project').check();
+    await terms
+      .getByRole('button', {
+        name: 'Use hooks/useStudio.ts for use studio dot tee ess',
+        exact: true,
+      })
+      .click();
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue(
+      'Fix hooks/useStudio.ts, but do not change 300.',
+    );
+    await terms.getByRole('button', { name: 'Undo last filename correction' }).click();
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue(
+      'Fix use studio dot tee ess, but do not change 300.',
+    );
+    // Explicit memory remains visible and removable even after undoing draft text.
+    await page.getByText('Project pronunciations · 1 saved').click();
+    await expect(
+      page.getByRole('button', {
+        name: 'Remove pronunciation use studio dot tee ess',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.getByLabel('Spoken phrase', { exact: true }).fill('my recorder');
+    await page.getByLabel('Vocabulary file', { exact: true }).selectOption('hooks/useStudio.ts');
+    await page.getByRole('button', { name: 'Save pronunciation', exact: true }).click();
+    await page.getByLabel('Prefer to type?').fill('Fix my recorder without changing 300.');
+    await page.getByRole('button', { name: 'Prepare instruction' }).click();
+    const suggestion = await page.evaluate(
+      async () => (await window.mira!.studio.state()).draft!.terminology!.suggestions[0],
+    );
+    const forgedRejected = await page.evaluate(async (id) => {
+      const draft = (await window.mira!.studio.state()).draft!;
+      try {
+        await window.mira!.studio.correct(draft.id, id, '.env', false);
+        return false;
+      } catch {
+        return true;
+      }
+    }, suggestion.id);
+    expect(forgedRejected).toBe(true);
+    const staleRejected = await page.evaluate(async (id) => {
+      const draft = (await window.mira!.studio.state()).draft!;
+      await window.mira!.studio.edit(draft.id, `Now ${draft.prompt}`);
+      try {
+        await window.mira!.studio.correct(draft.id, id, 'hooks/useStudio.ts', false);
+        return false;
+      } catch {
+        return true;
+      }
+    }, suggestion.id);
+    expect(staleRejected).toBe(true);
+    await terms
+      .getByRole('button', { name: 'Use hooks/useStudio.ts for my recorder', exact: true })
+      .click();
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue(
+      'Now Fix hooks/useStudio.ts without changing 300.',
+    );
+    await page.getByLabel('Prepared prompt').fill('Fix hooks/useStudio.ts while changing 300.');
+    await expect(
+      page.getByText('These original details may be missing: negation.', { exact: false }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+    expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toContain(
+      'Fix hooks/useStudio.ts while changing 300.',
+    );
+    await page.getByRole('button', { name: 'Disconnect project' }).click();
+    await page.getByRole('button', { name: 'Connect project' }).click();
+    await expect(page.getByLabel('Project-aware dictation', { exact: true })).not.toBeChecked();
+    await page.getByLabel('Project-aware dictation', { exact: true }).check();
+    await page.getByText('Project pronunciations · 2 saved').click();
+    await page
+      .getByRole('button', { name: 'Remove pronunciation my recorder', exact: true })
+      .click();
+    await expect(
+      page.getByRole('button', { name: 'Remove pronunciation my recorder', exact: true }),
+    ).toHaveCount(0);
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
     await page.getByText('Recovery & diagnostics').click();

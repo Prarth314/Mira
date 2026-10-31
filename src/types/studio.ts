@@ -16,6 +16,11 @@ export type Draft = {
   delivery: 'prepared' | 'attempted' | 'copied' | 'failed';
   error?: string;
   context?: ContextAttachment[];
+  terminology?: {
+    projectName: string;
+    suggestions: import('./vocabulary').TermSuggestion[];
+  };
+  reviewWarnings?: string[];
 };
 export type StudioState = {
   phase: 'idle' | 'recording' | 'transcribing' | 'refining' | 'delivering';
@@ -33,6 +38,7 @@ export interface StudioApi {
   cancel(id: string): Promise<void>;
   prepare(prompt: string, mode: VoiceMode): Promise<void>;
   edit(id: string, prompt: string): Promise<void>;
+  correct(id: string, suggestionId: string, path: string, remember: boolean): Promise<void>;
   copy(id: string): Promise<void>;
   deliver(id: string): Promise<void>;
   discard(id: string): Promise<void>;

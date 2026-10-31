@@ -76,6 +76,14 @@ export class ProjectIndex {
       .slice(0, 50);
   }
 
+  vocabulary(): { projectId: string; files: string[] } | null {
+    if (!this.root) return null;
+    return {
+      projectId: createHash('sha256').update(this.root).digest('hex'),
+      files: [...this.files].sort(),
+    };
+  }
+
   async attach(paths: string[]): Promise<ContextAttachment[]> {
     if (paths.length > 3 || new Set(paths).size !== paths.length)
       throw new MiraError('action_invalid', 'Select at most three distinct files');
