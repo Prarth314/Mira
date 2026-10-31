@@ -96,6 +96,9 @@ test('production build opens with an isolated preload and settings bridge', asyn
     await page.getByRole('button', { name: 'Prepare instruction' }).click();
     await expect(page.getByText('Attached context · 1 files')).toBeVisible();
     await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+    await expect(
+      page.getByText('Copied. Paste it wherever you are working.', { exact: true }),
+    ).toBeVisible();
     const contextualCopy = await app.evaluate(async ({ clipboard }) => clipboard.readText());
     expect(contextualCopy).toContain('export const sessionTTL = 300;');
     expect(contextualCopy).not.toContain('PRIVATE=');
@@ -111,7 +114,7 @@ test('production build opens with an isolated preload and settings bridge', asyn
       'Fix use studio dot tee ess, but do not change 300.',
     );
     const terms = page.getByRole('region', { name: 'Project-aware review' });
-    await expect(terms.getByText('ambiguous: choose a file', { exact: false })).toBeVisible();
+    await expect(terms.getByText('ambiguous: choose a reference', { exact: false })).toBeVisible();
     const vocabularyAccessibility = await new AxeBuilder({ page })
       .setLegacyMode()
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
@@ -134,7 +137,7 @@ test('production build opens with an isolated preload and settings bridge', asyn
     await expect(page.getByLabel('Prepared prompt')).toHaveValue(
       'Fix hooks/useStudio.ts, but do not change 300.',
     );
-    await terms.getByRole('button', { name: 'Undo last filename correction' }).click();
+    await terms.getByRole('button', { name: 'Undo last correction' }).click();
     await expect(page.getByLabel('Prepared prompt')).toHaveValue(
       'Fix use studio dot tee ess, but do not change 300.',
     );
@@ -186,6 +189,9 @@ test('production build opens with an isolated preload and settings bridge', asyn
       page.getByText('These original details may be missing: negation.', { exact: false }),
     ).toBeVisible();
     await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+    await expect(
+      page.getByText('Copied. Paste it wherever you are working.', { exact: true }),
+    ).toBeVisible();
     expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toContain(
       'Fix hooks/useStudio.ts while changing 300.',
     );
@@ -200,6 +206,41 @@ test('production build opens with an isolated preload and settings bridge', asyn
     await expect(
       page.getByRole('button', { name: 'Remove pronunciation my recorder', exact: true }),
     ).toHaveCount(0);
+    await page.getByText('Choose files to attach', { exact: true }).click();
+    await page.getByRole('checkbox', { name: 'auth.ts', exact: true }).click();
+    await page
+      .getByLabel('Prefer to type?')
+      .fill('Change session t t l without changing permissions.');
+    await page.getByRole('button', { name: 'Prepare instruction' }).click();
+    await expect(
+      terms.getByRole('button', { name: 'Use sessionTTL for session t t l', exact: true }),
+    ).toBeVisible();
+    await terms.screenshot({ path: 'test-results/project-symbol-review.png' });
+    await terms
+      .getByRole('button', { name: 'Use sessionTTL for session t t l', exact: true })
+      .click();
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue(
+      'Change sessionTTL without changing permissions.',
+    );
+    await page.getByLabel('Prefer to type?').fill('Review session t t l.');
+    await page.getByRole('button', { name: 'Prepare instruction' }).click();
+    await expect(
+      terms.getByRole('button', { name: 'Use sessionTTL for session t t l', exact: true }),
+    ).toBeVisible();
+    await writeFile(path.join(project, 'auth.ts'), 'export const sessionTimeout = 500;');
+    await terms
+      .getByRole('button', { name: 'Use sessionTTL for session t t l', exact: true })
+      .click();
+    await expect(page.getByRole('alert')).toContainText('Project files changed');
+    await page.getByRole('button', { name: 'Refresh index', exact: true }).click();
+    await expect(page.getByRole('checkbox', { name: 'auth.ts', exact: true })).not.toBeChecked();
+    await page.getByRole('checkbox', { name: 'auth.ts', exact: true }).click();
+    await page.getByLabel('Prefer to type?').fill('Review session timeout.');
+    await page.getByRole('button', { name: 'Prepare instruction' }).click();
+    await terms
+      .getByRole('button', { name: 'Use sessionTimeout for session timeout', exact: true })
+      .click();
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue('Review sessionTimeout.');
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
     await page.getByText('Recovery & diagnostics').click();

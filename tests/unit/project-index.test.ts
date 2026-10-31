@@ -19,6 +19,27 @@ afterEach(async () => {
 });
 
 describe('explicit project context', () => {
+  it('refreshes renamed filenames and rejects removed or redirected correction targets', async () => {
+    const index = new ProjectIndex();
+    await index.connect(root);
+    expect(await index.currentFile('src/auth.ts')).toBe(true);
+    await fs.rename(path.join(root, 'src/auth.ts'), path.join(root, 'src/session.ts'));
+    expect(await index.currentFile('src/auth.ts')).toBe(false);
+    await index.refresh();
+    expect(index.search('')).toEqual(['src/session.ts']);
+    expect(await index.currentFile('src/session.ts')).toBe(true);
+    expect(await index.currentFile('../outside.ts')).toBe(false);
+    index.disconnect();
+    await expect(index.refresh()).rejects.toThrow();
+  });
+
+  it('does not reconnect after a pending index operation was explicitly disconnected', async () => {
+    const index = new ProjectIndex();
+    const connection = index.connect(root);
+    index.disconnect();
+    await expect(connection).rejects.toThrow('changed');
+    expect(index.vocabulary()).toBeNull();
+  });
   it('indexes filenames while excluding ignored and sensitive files', async () => {
     const index = new ProjectIndex();
     expect(await index.connect(root)).toMatchObject({ count: 1 });

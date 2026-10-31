@@ -12,6 +12,11 @@ function spokenName(value: string): string {
     .replace(/[_-]/g, ' ');
 }
 
+function spokenForms(value: string): string[] {
+  const name = spokenName(value);
+  return [...new Set([name, name.replace(/\b[A-Z]{2,5}\b/g, (word) => word.split('').join(' '))])];
+}
+
 const EXTENSIONS: Record<string, string[]> = {
   ts: ['t s', 'tee ess'],
   tsx: ['t s x', 'tee ess ex'],
@@ -26,33 +31,55 @@ const EXTENSIONS: Record<string, string[]> = {
 
 /** Exact spoken forms only. No fuzzy guessing or unreviewed replacements. */
 export function suggestTerms(prompt: string, vocabulary: VocabularySnapshot): TermSuggestion[] {
-  const phrases = new Map<string, { paths: Set<string>; source: 'filename' | 'alias' }>();
-  function add(phrase: string, file: string, source: 'filename' | 'alias') {
+  const phrases = new Map<
+    string,
+    { paths: Set<string>; source: TermSuggestion['source']; symbols: Map<string, Set<string>> }
+  >();
+  function add(
+    phrase: string,
+    file: string,
+    source: 'filename' | 'alias' | 'symbol',
+    origin?: string,
+  ) {
     const normalized = normalizePhrase(phrase);
     const count = normalized.split(' ').length;
-    if (!normalized || count > 12 || (count < 2 && source === 'filename')) return;
+    if (!normalized || count > 12 || (count < 2 && source !== 'alias')) return;
     const existing = phrases.get(normalized);
     if (source === 'alias') {
-      phrases.set(normalized, { paths: new Set([file]), source });
+      phrases.set(normalized, { paths: new Set([file]), source, symbols: new Map() });
     } else if (existing) {
+      if (existing.source === 'alias') return;
       existing.paths.add(file);
-    } else phrases.set(normalized, { paths: new Set([file]), source });
+      if (existing.source !== source) existing.source = 'mixed';
+    } else phrases.set(normalized, { paths: new Set([file]), source, symbols: new Map() });
+    if (origin) {
+      const entry = phrases.get(normalized)!;
+      const origins = entry.symbols.get(file) ?? new Set<string>();
+      origins.add(origin);
+      entry.symbols.set(file, origins);
+    }
   }
   const files = new Set(vocabulary.files);
   for (const file of files) {
     const basename = file.split('/').pop()!;
     const dot = basename.lastIndexOf('.');
     if (dot < 1) continue;
-    const stem = spokenName(basename.slice(0, dot));
     const extension = basename.slice(dot + 1).toLowerCase();
-    add(stem, file, 'filename');
-    for (const suffix of [extension, ...(EXTENSIONS[extension] ?? [])]) {
-      add(`${stem} dot ${suffix}`, file, 'filename');
-      add(`${stem} ${suffix}`, file, 'filename');
+    for (const stem of spokenForms(basename.slice(0, dot))) {
+      add(stem, file, 'filename');
+      for (const suffix of [extension, ...(EXTENSIONS[extension] ?? [])]) {
+        add(`${stem} dot ${suffix}`, file, 'filename');
+        add(`${stem} ${suffix}`, file, 'filename');
+      }
     }
   }
   for (const alias of vocabulary.aliases) {
     if (files.has(alias.path)) add(alias.phrase, alias.path, 'alias');
+  }
+  for (const symbol of vocabulary.symbols ?? []) {
+    if (files.has(symbol.path))
+      for (const phrase of spokenForms(symbol.name))
+        add(phrase, symbol.name, 'symbol', symbol.path);
   }
   const tokens = [...prompt.matchAll(/[A-Za-z0-9_$]+/g)];
   const basenames = new Set(vocabulary.files.map((file) => file.split('/').pop()!));
@@ -82,6 +109,9 @@ export function suggestTerms(prompt: string, vocabulary: VocabularySnapshot): Te
         phrase,
         candidates,
         source: match.source,
+        symbolFiles: match.symbols.size
+          ? Object.fromEntries([...match.symbols].map(([name, paths]) => [name, [...paths].sort()]))
+          : undefined,
       });
       i += length - 1;
       break;

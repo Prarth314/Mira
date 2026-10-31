@@ -31,7 +31,10 @@ export default function TerminologyReview({
       {draft.terminology && (
         <section aria-label="Project-aware review" className="terminology-panel">
           <strong>Project-aware review · {draft.terminology.projectName}</strong>
-          <p>Local filename suggestions. Choose the intended file; your original stays below.</p>
+          <p>
+            Local filename and symbol suggestions. Choose the intended reference; your original
+            stays below.
+          </p>
           {dirty ? (
             <button
               className="secondary-button"
@@ -44,7 +47,7 @@ export default function TerminologyReview({
             </button>
           ) : (
             <>
-              {!!suggestions.length && (
+              {suggestions.some((item) => item.source !== 'symbol') && (
                 <label className="vocabulary-toggle">
                   <input
                     type="checkbox"
@@ -57,16 +60,20 @@ export default function TerminologyReview({
               )}
               {!suggestions.length && (
                 <p>
-                  No pending filename suggestions. This checks known spoken forms, not general
-                  speech accuracy.
+                  No pending term suggestions. This checks known spoken forms, not general speech
+                  accuracy.
                 </p>
               )}
               {suggestions.map((suggestion) => (
                 <div className="term-suggestion" key={suggestion.id}>
                   <p>
                     <q>{suggestion.phrase}</q>{' '}
-                    {suggestion.source === 'alias' ? '· saved pronunciation' : '· filename match'}
-                    {suggestion.candidates.length > 1 ? ' · ambiguous: choose a file' : ''}
+                    {suggestion.source === 'alias'
+                      ? '· saved pronunciation'
+                      : suggestion.source === 'symbol'
+                        ? '· declaration match'
+                        : '· filename match'}
+                    {suggestion.candidates.length > 1 ? ' · ambiguous: choose a reference' : ''}
                   </p>
                   <div className="term-actions">
                     {suggestion.candidates.map((file) => (
@@ -81,13 +88,20 @@ export default function TerminologyReview({
                               draft.id,
                               suggestion.id,
                               file,
-                              remember,
+                              remember && !suggestion.symbolFiles?.[file],
                             );
                             setUndo({ id: draft.id, prompt: draft.prompt });
                           });
                         }}
                       >
-                        {file}
+                        <span>
+                          {file}
+                          {suggestion.symbolFiles?.[file] && (
+                            <small className="symbol-origin">
+                              {suggestion.symbolFiles[file].join(', ')}
+                            </small>
+                          )}
+                        </span>
                       </button>
                     ))}
                     <button
@@ -115,7 +129,7 @@ export default function TerminologyReview({
                   });
                 }}
               >
-                Undo last filename correction
+                Undo last correction
               </button>
               <p>
                 Undo restores draft text. Remove any saved pronunciation in Project pronunciations.

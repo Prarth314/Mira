@@ -5,8 +5,9 @@ import { ProjectIndex } from './project-index';
 import { record, text } from './validation';
 import { MiraError } from '../types/MiraError';
 import type { ContextAttachment } from '../types/studio';
-import type { ProjectAlias, VocabularySnapshot } from '../types/vocabulary';
+import type { ProjectAlias, ProjectSymbol, VocabularySnapshot } from '../types/vocabulary';
 import { ProjectAliasStore } from './project-aliases';
+import { projectSymbols } from './project-symbols';
 
 const index = new ProjectIndex();
 let selected: ContextAttachment[] = [];
@@ -16,16 +17,32 @@ let enabled = false;
 let aliases: ProjectAlias[] = [];
 let generation = 0;
 let store: ProjectAliasStore;
+let symbols: ProjectSymbol[] = [];
 
 function status() {
-  return { project, selected, vocabulary: { enabled, aliases } };
+  return {
+    project,
+    selected,
+    vocabulary: { enabled, aliases, symbolCount: enabled ? symbols.length : 0 },
+  };
 }
 
 export function projectVocabulary(): VocabularySnapshot | null {
   const scope = index.vocabulary();
   return enabled && project && scope
-    ? { ...scope, name: project.name, aliases: structuredClone(aliases) }
+    ? {
+        ...scope,
+        name: project.name,
+        aliases: structuredClone(aliases),
+        symbols: structuredClone(symbols),
+      }
     : null;
+}
+
+export function vocabularyFileCurrent(projectId: string, file: string): Promise<boolean> {
+  if (!enabled || connecting || index.vocabulary()?.projectId !== projectId)
+    return Promise.resolve(false);
+  return index.currentFile(file);
 }
 
 export async function rememberAlias(
@@ -65,6 +82,7 @@ export function registerProject(): void {
         if (!result.canceled && result.filePaths[0]) {
           project = await index.connect(result.filePaths[0]);
           selected = [];
+          symbols = [];
           enabled = false;
           aliases = [];
           generation++;
@@ -83,18 +101,38 @@ export function registerProject(): void {
   );
   handle('mira:project:status', status, ['workspace']);
   handle(
+    'mira:project:refresh',
+    async () => {
+      if (connecting || !project)
+        throw new MiraError('action_invalid', 'Project is unavailable or busy');
+      connecting = true;
+      generation++;
+      try {
+        project = await index.refresh();
+        selected = [];
+        symbols = [];
+        return status();
+      } finally {
+        connecting = false;
+      }
+    },
+    ['workspace'],
+  );
+  handle(
     'mira:project:vocabulary',
     async (_event, value: unknown) => {
       if (typeof value !== 'boolean' || !project || connecting)
         throw new MiraError('action_invalid', 'Connect a project before enabling vocabulary.');
       const currentGeneration = ++generation;
       enabled = false;
+      symbols = [];
       if (value) {
         const saved = await store.read(index.vocabulary()!.projectId);
         if (generation !== currentGeneration)
           throw new MiraError('action_invalid', 'Project changed while loading vocabulary.');
         aliases = saved;
         enabled = true;
+        symbols = projectSymbols(selected);
       }
       return status();
     },
@@ -123,9 +161,15 @@ export function registerProject(): void {
     'mira:project:select',
     async (_event, payload: unknown) => {
       const files = record(payload).paths;
+      if (connecting) throw new MiraError('action_invalid', 'Wait for project indexing to finish.');
       if (!Array.isArray(files) || !files.every((file) => typeof file === 'string'))
         throw new MiraError('action_invalid', 'Invalid file selection');
-      selected = await index.attach(files);
+      const currentGeneration = generation;
+      const snapshots = await index.attach(files);
+      if (generation !== currentGeneration || connecting)
+        throw new MiraError('action_invalid', 'Project changed during file selection.');
+      selected = snapshots;
+      symbols = enabled ? projectSymbols(selected) : [];
       return selected;
     },
     ['workspace'],
@@ -136,6 +180,7 @@ export function registerProject(): void {
       generation++;
       enabled = false;
       aliases = [];
+      symbols = [];
       index.disconnect();
       project = null;
       selected = [];

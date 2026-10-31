@@ -10,6 +10,42 @@ const scope: VocabularySnapshot = {
 };
 
 describe('reviewable project vocabulary', () => {
+  it('offers exact declaration spellings only from scoped files, including spelled acronyms', () => {
+    const vocabulary = {
+      ...scope,
+      symbols: [
+        { name: 'refreshSession', path: 'src/session.ts' },
+        { name: 'sessionTTL', path: 'src/session.ts' },
+        { name: 'fakeExternal', path: 'unselected.ts' },
+      ],
+    };
+    const suggestions = suggestTerms(
+      'Fix refresh session and session t t l, not fake external.',
+      vocabulary,
+    );
+    expect(suggestions).toMatchObject([
+      {
+        phrase: 'refresh session',
+        candidates: ['refreshSession'],
+        source: 'symbol',
+        symbolFiles: { refreshSession: ['src/session.ts'] },
+      },
+      { phrase: 'session t t l', candidates: ['sessionTTL'], source: 'symbol' },
+    ]);
+    expect(suggestTerms('Keep refreshSession and sessionTTL unchanged.', vocabulary)).toEqual([]);
+  });
+
+  it('keeps collisions between a filename and a declaration reviewable', () => {
+    const vocabulary = {
+      ...scope,
+      files: ['refreshSession.ts'],
+      symbols: [{ name: 'refreshSession', path: 'refreshSession.ts' }],
+    };
+    expect(suggestTerms('Fix refresh session.', vocabulary)[0]).toMatchObject({
+      candidates: ['refreshSession', 'refreshSession.ts'],
+      source: 'mixed',
+    });
+  });
   it('locates spoken camel-case filenames and spelled extensions without changing text', () => {
     const prompt = 'Fix use studio dot tee ess, but do not change 300.';
     const [suggestion] = suggestTerms(prompt, scope);

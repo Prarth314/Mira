@@ -51,6 +51,7 @@ declare global {
       };
       project: {
         status: () => Promise<ProjectStatus>;
+        refresh: () => Promise<ProjectStatus>;
         connect: () => Promise<ProjectStatus>;
         vocabulary: (enabled: boolean) => Promise<ProjectStatus>;
         alias: (phrase: string, path: string) => Promise<ProjectStatus>;

@@ -17,7 +17,13 @@ import type {
   StudioState,
   VoiceMode,
 } from '../types/studio';
-import { selectedContext, contextUnchanged, projectVocabulary, rememberAlias } from './project';
+import {
+  selectedContext,
+  contextUnchanged,
+  projectVocabulary,
+  rememberAlias,
+  vocabularyFileCurrent,
+} from './project';
 import { suggestTerms } from './vocabulary';
 import type { VocabularySnapshot } from '../types/vocabulary';
 import { formatPrompt } from './project-index';
@@ -263,12 +269,31 @@ export function registerStudio(): void {
       const file = text(value.path, 'Project file', 1024);
       if (!suggestion || !suggestion.candidates.includes(file))
         throw new MiraError('action_invalid', 'This suggestion changed. Review the current draft.');
+      const symbolOrigins = suggestion.symbolFiles?.[file];
+      if (symbolOrigins && value.remember)
+        throw new MiraError(
+          'action_invalid',
+          'Saved pronunciations currently support filenames only.',
+        );
       const prompt = text(
         draft.prompt.slice(0, suggestion.start) + file + draft.prompt.slice(suggestion.end),
         'Prompt',
       );
       publish({ phase: 'delivering' });
       try {
+        const current = symbolOrigins
+          ? (await contextUnchanged(draft.context ?? [])) &&
+            (
+              await Promise.all(
+                symbolOrigins.map((origin) => vocabularyFileCurrent(scope.projectId, origin)),
+              )
+            ).every(Boolean)
+          : await vocabularyFileCurrent(scope.projectId, file);
+        if (!current || scope.projectId !== projectVocabulary()?.projectId)
+          throw new MiraError(
+            'action_invalid',
+            'Project files changed. Refresh the index, reattach files, and prepare a new draft.',
+          );
         if (value.remember) await rememberAlias(scope.projectId, suggestion.phrase, file);
         publish({
           draft: {

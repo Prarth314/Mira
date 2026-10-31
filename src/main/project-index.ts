@@ -16,8 +16,10 @@ const MAX_CONTEXT = 24000;
 export class ProjectIndex {
   private files = new Set<string>();
   private root = '';
+  private generation = 0;
 
   async connect(directory: string): Promise<{ name: string; count: number }> {
+    const generation = ++this.generation;
     const root = await fs.realpath(directory);
     if (!(await fs.stat(root)).isDirectory())
       throw new MiraError('action_invalid', 'Select a project folder');
@@ -64,6 +66,8 @@ export class ProjectIndex {
       }
     };
     await walk('', ignore(), 0);
+    if (generation !== this.generation)
+      throw new MiraError('action_invalid', 'Project changed during indexing');
     this.root = root;
     this.files = files;
     return { name: path.basename(root), count: files.size };
@@ -82,6 +86,30 @@ export class ProjectIndex {
       projectId: createHash('sha256').update(this.root).digest('hex'),
       files: [...this.files].sort(),
     };
+  }
+
+  async refresh(): Promise<{ name: string; count: number }> {
+    if (!this.root) throw new MiraError('action_invalid', 'Connect a project first');
+    return this.connect(this.root);
+  }
+
+  async currentFile(file: string): Promise<boolean> {
+    if (!this.root || !this.files.has(file) || EXCLUDED.test(file)) return false;
+    const root = this.root;
+    try {
+      const candidate = path.join(root, file);
+      const resolved = await fs.realpath(candidate);
+      const boundary = path.relative(root, resolved);
+      return (
+        root === this.root &&
+        !boundary.startsWith('..') &&
+        !path.isAbsolute(boundary) &&
+        !(await fs.lstat(candidate)).isSymbolicLink() &&
+        (await fs.stat(resolved)).isFile()
+      );
+    } catch {
+      return false;
+    }
   }
 
   async attach(paths: string[]): Promise<ContextAttachment[]> {
@@ -139,6 +167,7 @@ export class ProjectIndex {
   }
 
   disconnect(): void {
+    this.generation++;
     this.root = '';
     this.files.clear();
   }

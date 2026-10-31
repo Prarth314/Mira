@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('mira', {
   },
   project: {
     status: () => ipcRenderer.invoke('mira:project:status'),
+    refresh: () => ipcRenderer.invoke('mira:project:refresh'),
     vocabulary: (enabled) => ipcRenderer.invoke('mira:project:vocabulary', enabled),
     alias: (phrase, path) => ipcRenderer.invoke('mira:project:alias', { phrase, path }),
     connect: () => ipcRenderer.invoke('mira:project:connect'),

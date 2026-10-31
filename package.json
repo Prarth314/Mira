@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
+    "@babel/parser": "8.0.10",
     "framer-motion": "^12.38.0",
     "ignore": "^7.0.14",
     "lucide-react": "^1.8.0",

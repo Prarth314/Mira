@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FolderOpen, Link2, X, FileText } from 'lucide-react';
+import { FolderOpen, Link2, X, FileText, RefreshCw } from 'lucide-react';
 import type { ContextAttachment } from '../src/types/studio';
 import type { ProjectAlias, ProjectStatus } from '../src/types/vocabulary';
 
@@ -22,12 +22,14 @@ export default function ProjectPanel({
   const [aliases, setAliases] = useState<ProjectAlias[]>([]);
   const [phrase, setPhrase] = useState('');
   const [target, setTarget] = useState('');
+  const [symbolCount, setSymbolCount] = useState(0);
 
   function update(result: ProjectStatus) {
     setProject(result.project);
     setSelected(result.selected);
     setEnabled(result.vocabulary.enabled);
     setAliases(result.vocabulary.aliases);
+    setSymbolCount(result.vocabulary.symbolCount);
   }
 
   async function vocabularyOperation(operation: () => Promise<ProjectStatus>) {
@@ -89,6 +91,7 @@ export default function ProjectPanel({
           paths.includes(file) ? paths.filter((path) => path !== file) : [...paths, file],
         ),
       );
+      update(await api.status());
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not attach file.');
     } finally {
@@ -111,22 +114,38 @@ export default function ProjectPanel({
           </div>
         </div>
         {project ? (
-          <button
-            className="icon-button"
-            aria-label="Disconnect project"
-            disabled={disabled || busy}
-            onClick={() => {
-              void api?.disconnect().then(() => {
-                setProject(null);
-                setSelected([]);
-                setFiles([]);
-                setEnabled(false);
-                setAliases([]);
-              });
-            }}
-          >
-            <X size={15} />
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="secondary-button"
+              disabled={disabled || busy}
+              onClick={() => {
+                void vocabularyOperation(async () => {
+                  const result = await api!.refresh();
+                  setTarget('');
+                  setQuery('');
+                  return result;
+                });
+              }}
+            >
+              <RefreshCw size={14} /> Refresh index
+            </button>
+            <button
+              className="icon-button"
+              aria-label="Disconnect project"
+              disabled={disabled || busy}
+              onClick={() => {
+                void api?.disconnect().then(() => {
+                  setProject(null);
+                  setSelected([]);
+                  setFiles([]);
+                  setEnabled(false);
+                  setAliases([]);
+                });
+              }}
+            >
+              <X size={15} />
+            </button>
+          </div>
         ) : (
           <button
             className="secondary-button"
@@ -156,86 +175,92 @@ export default function ProjectPanel({
             Project-aware dictation
           </label>
           <p>
-            Suggest indexed filenames after transcription. Nothing is replaced automatically. Enable
-            again when reconnecting a project.
+            Suggest filenames and declarations from attached JS/TS files. Nothing is replaced
+            automatically. Refresh clears attachments; enable again when reconnecting a project.
           </p>
           {enabled && (
-            <details className="vocabulary-manager">
-              <summary>Project pronunciations · {aliases.length} saved</summary>
+            <>
               <p>
-                Saved only on this device for this folder. Adding a phrase does not read or attach
-                that file.
+                {symbolCount} declaration names from selected files · preparing a new draft
+                snapshots this vocabulary.
               </p>
-              <label htmlFor="alias-phrase">Spoken phrase</label>
-              <input
-                id="alias-phrase"
-                value={phrase}
-                maxLength={100}
-                disabled={disabled || busy}
-                placeholder="For example: use studio"
-                onChange={(event) => setPhrase(event.target.value)}
-              />
-              <label htmlFor="alias-search">Find a vocabulary file</label>
-              <input
-                id="alias-search"
-                value={query}
-                maxLength={200}
-                disabled={disabled || busy}
-                placeholder="Search filenames…"
-                onChange={(event) => setQuery(event.target.value)}
-              />
-              <label htmlFor="alias-target">Vocabulary file</label>
-              <select
-                id="alias-target"
-                value={target}
-                disabled={disabled || busy}
-                onChange={(event) => setTarget(event.target.value)}
-              >
-                <option value="">Choose a file</option>
-                {[...new Set([...(target ? [target] : []), ...files])].map((file) => (
-                  <option key={file} value={file}>
-                    {file}
-                  </option>
+              <details className="vocabulary-manager">
+                <summary>Project pronunciations · {aliases.length} saved</summary>
+                <p>
+                  Saved only on this device for this folder. Adding a phrase does not read or attach
+                  that file.
+                </p>
+                <label htmlFor="alias-phrase">Spoken phrase</label>
+                <input
+                  id="alias-phrase"
+                  value={phrase}
+                  maxLength={100}
+                  disabled={disabled || busy}
+                  placeholder="For example: use studio"
+                  onChange={(event) => setPhrase(event.target.value)}
+                />
+                <label htmlFor="alias-search">Find a vocabulary file</label>
+                <input
+                  id="alias-search"
+                  value={query}
+                  maxLength={200}
+                  disabled={disabled || busy}
+                  placeholder="Search filenames…"
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                <label htmlFor="alias-target">Vocabulary file</label>
+                <select
+                  id="alias-target"
+                  value={target}
+                  disabled={disabled || busy}
+                  onChange={(event) => setTarget(event.target.value)}
+                >
+                  <option value="">Choose a file</option>
+                  {[...new Set([...(target ? [target] : []), ...files])].map((file) => (
+                    <option key={file} value={file}>
+                      {file}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="secondary-button"
+                  disabled={disabled || busy || !phrase.trim() || !target}
+                  onClick={() => {
+                    void vocabularyOperation(() => api!.alias(phrase, target));
+                  }}
+                >
+                  Save pronunciation
+                </button>
+                {aliases.map((alias) => (
+                  <div className="alias-row" key={alias.phrase}>
+                    <span>
+                      <strong>{alias.phrase}</strong> → <code>{alias.path}</code>
+                    </span>
+                    <button
+                      className="text-button"
+                      disabled={disabled || busy}
+                      aria-label={`Edit pronunciation ${alias.phrase}`}
+                      onClick={() => {
+                        setPhrase(alias.phrase);
+                        setTarget(alias.path);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-button"
+                      disabled={disabled || busy}
+                      aria-label={`Remove pronunciation ${alias.phrase}`}
+                      onClick={() => {
+                        void vocabularyOperation(() => api!.alias(alias.phrase, ''));
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 ))}
-              </select>
-              <button
-                className="secondary-button"
-                disabled={disabled || busy || !phrase.trim() || !target}
-                onClick={() => {
-                  void vocabularyOperation(() => api!.alias(phrase, target));
-                }}
-              >
-                Save pronunciation
-              </button>
-              {aliases.map((alias) => (
-                <div className="alias-row" key={alias.phrase}>
-                  <span>
-                    <strong>{alias.phrase}</strong> → <code>{alias.path}</code>
-                  </span>
-                  <button
-                    className="text-button"
-                    disabled={disabled || busy}
-                    aria-label={`Edit pronunciation ${alias.phrase}`}
-                    onClick={() => {
-                      setPhrase(alias.phrase);
-                      setTarget(alias.path);
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="text-button"
-                    disabled={disabled || busy}
-                    aria-label={`Remove pronunciation ${alias.phrase}`}
-                    onClick={() => {
-                      void vocabularyOperation(() => api!.alias(alias.phrase, ''));
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </details>
+              </details>
+            </>
           )}
         </div>
       )}

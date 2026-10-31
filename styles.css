@@ -922,3 +922,10 @@ textarea {
   margin-top: 6px;
   overflow-wrap: anywhere;
 }
+.symbol-origin {
+  display: block;
+  color: #bcb4cf;
+  font-size: 10px;
+  line-height: 1.6;
+  margin-top: 3px;
+}
