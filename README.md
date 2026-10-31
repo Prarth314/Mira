@@ -75,7 +75,9 @@ The index respects Git-style ignore rules and excludes hidden paths, common cred
 
 Attached source is **not sent to the refinement provider**. It is appended as reference material when you explicitly copy or paste the prepared prompt. If a selected file changes, disappears, or becomes disconnected, reattach it and prepare the draft again before sharing.
 
-This is a bounded filename index with explicit text attachments. Semantic search, symbol indexing, and repository-aware speech correction are future work.
+Enable **Project-aware dictation** to suggest indexed filenames from spoken forms such as “use studio dot tee ess.” Suggestions appear in draft review; ambiguous names show multiple choices, and no replacement happens automatically. Accept a filename, keep the original, or undo the last correction. You can explicitly remember a pronunciation for that project and inspect, edit, or remove it under **Project pronunciations**.
+
+This first version uses local filename matching and saved aliases after transcription; it does not train the speech model or send the vocabulary to a provider. Symbol indexing, semantic search, and broader speech adaptation remain future work. See the [project-aware dictation guide](docs/PROJECT_AWARE_DICTATION.md) for the workflow and limits.
 
 ### 4. Review and choose delivery
 
@@ -99,6 +101,7 @@ Delivery is therefore reported as **attempted**, not confirmed receipt. An uncer
 | Recording lifecycle | Owned sessions, bounded audio buffering, pending-permission cancellation, stale-result guards, and a recording duration limit. |
 | Optional refinement | Anthropic and OpenAI adapters, bounded retries and timeouts, cancellation, truncated-output rejection, and original-instruction fallback. |
 | Project context | Opt-in filename indexing, scoped attachment previews, size limits, and checks for changed files before sharing. |
+| Project-aware dictation | Opt-in local filename suggestions, explicit ambiguity review, undo, project-specific saved pronunciations, and changed-detail warnings. |
 | Delivery | Explicit copy or guarded native paste attempts, destination revalidation, terminal restrictions, and no automatic submission. |
 | Local state | OS-backed encrypted key storage, versioned preferences, atomic writes, explicit recovery, and key removal. |
 | Diagnostics | On-demand report preview and copy using an allowlist that excludes instructions, keys, project paths, and source contents. |
@@ -232,6 +235,7 @@ The UI uses React, TypeScript, Vite, and locally bundled Tailwind styling. Elect
 | Transcript and draft | Kept in memory. No transcript history is saved; closing the application loses unsaved drafts. |
 | Instruction in Refine mode | Sent to the provider you select. That provider's terms, retention, and usage charges apply. |
 | Connected project | Filenames are indexed locally in memory. Source contents are read for explicit attachments. Disconnect clears the active index and selection; existing draft snapshots remain until discarded or the app closes. |
+| Project pronunciations | Saved only when explicitly requested, in the local app profile under a project-path hash. They contain the approved phrase and relative filename; remove them through Project pronunciations. |
 | Attached source | Previewed locally and included in the prompt you explicitly copy or paste. It is not included in Mira's refinement request. |
 | Provider keys | Persisted through Electron's OS-backed secure storage. Saved values are not returned through the renderer API. |
 | Model setup | Contacts Hugging Face to obtain the pinned model. Development/build preparation fetches pinned upstream GitHub archives. |
@@ -322,7 +326,7 @@ The objective is a dependable, deployable desktop product with evidence behind i
 | **Release candidate** | Signed Windows distribution, macOS signing/notarization, verification of signed native resources, authenticated updates, settings migration, failed-update recovery, and upgrade/uninstall testing. |
 | **Public release** | Resolve recurring beta defects, complete privacy and licensing review, add verified public desktop downloads to the deployed website, provide a support process, and establish a maintenance policy. |
 
-The next capability investments are direct editor integration and evaluated project vocabulary support. Those should improve a proven voice workflow rather than expand the product into unrelated modes. Public signing needs publisher credentials, and user validation needs consenting testers; neither can be replaced by additional unit tests.
+Project-aware filename review and saved pronunciations are now implemented. The next capability investments are direct editor integration and evaluating vocabulary support on real developer tasks. Those should improve a proven voice workflow rather than expand the product into unrelated modes. Public signing needs publisher credentials, and user validation needs consenting testers; neither can be replaced by additional unit tests.
 
 ## Contributing
 
@@ -338,6 +342,7 @@ For vulnerabilities or accidental exposure of sensitive information, follow [SEC
 | --- | --- |
 | [Production roadmap](docs/production-roadmap.md) | Active milestones, evidence, and remaining release gates. |
 | [Beta testing](docs/BETA_TESTING.md) | Internal downloads, native acceptance cases, and evaluation guidance. |
+| [Project-aware dictation](docs/PROJECT_AWARE_DICTATION.md) | Filename suggestions, local pronunciation management, and evaluation limits. |
 | [Privacy](PRIVACY.md) | Current processing, sharing, and retention behavior. |
 | [Security](SECURITY.md) | Sensitive reporting and security expectations. |
 | [Contributing](CONTRIBUTING.md) | Development and collaboration guidance. |

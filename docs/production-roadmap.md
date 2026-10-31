@@ -39,6 +39,12 @@ Signed public releases require publisher credentials. macOS behavior requires re
 
 ## Evidence
 
+### Project-aware dictation
+
+Implemented: opt-in local filename suggestions after transcription, explicit choice for ambiguous filenames, original transcript retention, single-correction undo, and explicitly saved project-specific pronunciations with editing/removal. Technical-detail and negation checks also appear during draft editing. Matching uses filename-derived spoken forms and aliases, not model fine-tuning or a semantic index. Tests cover matching boundaries, ambiguous candidates, stale/forged correction rejection, project-scoped persistence, and the Electron review workflow. See [the feature guide](PROJECT_AWARE_DICTATION.md).
+
+Still to evaluate: real developer correction time, false suggestions, technical accuracy across accents and microphones, and repeat usage. No measured productivity or accuracy improvement is claimed.
+
 ### Website deployment — October 31, 2026
 
 The [Mira website](https://mira-gilt-chi.vercel.app) is deployed on Vercel and configured as the repository homepage in GitHub. An HTTP check returned 200, and the deployed renderer serves the workspace UI. Native capabilities still require the Electron preload and main process; the browser deployment is a UI preview, not a complete web implementation of the desktop workflow. Public desktop download distribution and release validation remain outstanding.
