@@ -77,7 +77,9 @@ Attached source is **not sent to the refinement provider**. It is appended as re
 
 Enable **Project-aware dictation** to suggest indexed filenames from spoken forms such as “use studio dot tee ess.” Suggestions appear in draft review; ambiguous names show multiple choices, and no replacement happens automatically. Accept a filename, keep the original, or undo the last correction. You can explicitly remember a pronunciation for that project and inspect, edit, or remove it under **Project pronunciations**.
 
-This first version uses local filename matching and saved aliases after transcription; it does not train the speech model or send the vocabulary to a provider. Symbol indexing, semantic search, and broader speech adaptation remain future work. See the [project-aware dictation guide](docs/PROJECT_AWARE_DICTATION.md) for the workflow and limits.
+Attach a JS/TS file while vocabulary is enabled to suggest its top-level declaration names too: “session t t l” can offer `sessionTTL`, with its source file shown. Use **Refresh index** after filenames change; refresh clears attachments so you can select current snapshots.
+
+This version uses local filename/declaration matching and saved aliases after transcription; it does not train the speech model or send the vocabulary to a provider. A semantic symbol index, semantic search, and broader speech adaptation remain future work. See the [project-aware dictation guide](docs/PROJECT_AWARE_DICTATION.md) for the workflow and limits.
 
 ### 4. Review and choose delivery
 

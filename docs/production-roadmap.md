@@ -45,6 +45,8 @@ Implemented: opt-in local filename suggestions after transcription, explicit cho
 
 Still to evaluate: real developer correction time, false suggestions, technical accuracy across accents and microphones, and repeat usage. No measured productivity or accuracy improvement is claimed.
 
+Follow-up: attached JS/TS snapshots now supply parser-based top-level declaration hints, with source labels and spelled-acronym matching. Explicit index refresh handles renamed files and clears attachment snapshots; corrections recheck target existence and symbol-source freshness. This is scoped declaration extraction, not a repository-wide semantic index.
+
 ### Website deployment — October 31, 2026
 
 The [Mira website](https://mira-gilt-chi.vercel.app) is deployed on Vercel and configured as the repository homepage in GitHub. An HTTP check returned 200, and the deployed renderer serves the workspace UI. Native capabilities still require the Electron preload and main process; the browser deployment is a UI preview, not a complete web implementation of the desktop workflow. Public desktop download distribution and release validation remain outstanding.
