@@ -13,7 +13,7 @@ Deliver a desktop voice workspace: record → transcribe → inspect/refine → 
 3. **Useful voice beta:** self-contained speech runtime, model lifecycle, microphone setup, explicit draft review, safe destination adapters, recovery and local dictation fallback.
 4. **Distinctive beta:** opt-in project index, scoped and visible context, original/refined prompt comparison, reliable editor integration, evaluated technical vocabulary.
 5. **Release candidate:** native acceptance matrix, performance baselines, accessibility, signed installers, authenticated update path, migrations and failed-update recovery.
-6. **Public release:** observed beta use, corrected recurring defects, download page, privacy documentation, support process and maintenance policy.
+6. **Public release:** observed beta use, corrected recurring defects, verified public desktop downloads on the deployed website, privacy documentation, support process and maintenance policy.
 
 ## Feasibility gates
 
@@ -38,6 +38,10 @@ Deliver a desktop voice workspace: record → transcribe → inspect/refine → 
 Signed public releases require publisher credentials. macOS behavior requires real macOS testing. Product validation requires consenting beta users. These are release gates, not tasks that can be marked complete from Windows unit tests.
 
 ## Evidence
+
+### Website deployment — October 31, 2026
+
+The [Mira website](https://mira-gilt-chi.vercel.app) is deployed on Vercel and configured as the repository homepage in GitHub. An HTTP check returned 200, and the deployed renderer serves the workspace UI. Native capabilities still require the Electron preload and main process; the browser deployment is a UI preview, not a complete web implementation of the desktop workflow. Public desktop download distribution and release validation remain outstanding.
 
 Record the exact commit, OS/app versions, hardware, sample size, failure definitions and commands for each release candidate. Tests must measure transcript meaning, technical terms, cancellation, routing, latency and resource use. Do not infer external receipt from a successfully issued keyboard shortcut.
 

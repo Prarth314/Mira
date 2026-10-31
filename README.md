@@ -10,7 +10,7 @@
 **A voice workspace for developers.**<br>
 Speak your intent. Preserve the details. Stay in your flow.
 
-[Why Mira](#why-mira-exists) · [Workflow](#from-thought-to-reviewed-instruction) · [Get started](#get-started) · [Architecture](#architecture) · [Roadmap](#the-path-to-a-public-release) · [Contribute](#contributing)
+[Live website](https://mira-gilt-chi.vercel.app) · [Why Mira](#why-mira-exists) · [Workflow](#from-thought-to-reviewed-instruction) · [Get started](#get-started) · [Architecture](#architecture) · [Roadmap](#the-path-to-a-public-release) · [Contribute](#contributing)
 
 </div>
 
@@ -107,6 +107,12 @@ Delivery is therefore reported as **attempted**, not confirmed receipt. An uncer
 The current interface does not expose autonomous shell execution, general computer control, screenshot capture, accounts, billing, or team administration. Direct editor extensions and public automatic updates are not implemented.
 
 ## Get started
+
+### Visit the deployed website
+
+The [Mira website](https://mira-gilt-chi.vercel.app) is live on Vercel and linked from this repository's GitHub About section. It currently serves the workspace UI as a browser preview. Local Whisper processing, secure key storage, project access, global shortcuts, and native delivery require the Electron desktop app; deploying the renderer does not make those capabilities available in a browser.
+
+Use the website to explore the interface, and use an internal desktop build or the source instructions below for the complete workflow. Signed public desktop downloads remain a separate release gate.
 
 ### Try an internal packaged build
 
@@ -314,7 +320,7 @@ The objective is a dependable, deployable desktop product with evidence behind i
 | **Native validation** | Real microphones, permission denial/recovery, sleep/wake, focus changes, multiple displays, and each advertised OS/application combination pass the acceptance matrix. |
 | **Measured product quality** | Held-out, consented speech evaluation; technical-token preservation; latency, memory, CPU, and battery baselines; assistive-technology testing; feedback from actual beta use. |
 | **Release candidate** | Signed Windows distribution, macOS signing/notarization, verification of signed native resources, authenticated updates, settings migration, failed-update recovery, and upgrade/uninstall testing. |
-| **Public release** | Resolve recurring beta defects, complete privacy and licensing review, provide a download page and support process, and establish a maintenance policy. |
+| **Public release** | Resolve recurring beta defects, complete privacy and licensing review, add verified public desktop downloads to the deployed website, provide a support process, and establish a maintenance policy. |
 
 The next capability investments are direct editor integration and evaluated project vocabulary support. Those should improve a proven voice workflow rather than expand the product into unrelated modes. Public signing needs publisher credentials, and user validation needs consenting testers; neither can be replaced by additional unit tests.
 
