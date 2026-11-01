@@ -1,5 +1,5 @@
 import { test, expect, _electron as electron } from '@playwright/test';
-import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
@@ -60,12 +60,27 @@ test('production build opens with an isolated preload and settings bridge', asyn
     expect(
       await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content'),
     ).not.toContain('ws://');
-    await page.getByLabel('Prefer to type?').fill('Add regression tests for expired sessions.');
-    await page.getByRole('button', { name: 'Prepare instruction' }).click();
+    for (let i = 0; i < 50; i++) {
+      if (await page.evaluate(() => document.activeElement?.id === 'instruction')) break;
+      await page.keyboard.press('Tab');
+    }
+    await expect(page.getByLabel('Prefer to type?')).toBeFocused();
+    await page.keyboard.type('Add regression tests for expired sessions.');
+    await page.keyboard.press('Tab');
+    await expect(
+      page.getByRole('button', { name: 'Prepare instruction', exact: true }),
+    ).toBeFocused();
+    await page.keyboard.press('Enter');
     await expect(page.getByLabel('Prepared prompt')).toHaveValue(
       'Add regression tests for expired sessions.',
     );
-    await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+    for (let i = 0; i < 20; i++) {
+      if (await page.evaluate(() => document.activeElement?.textContent?.trim() === 'Copy prompt'))
+        break;
+      await page.keyboard.press('Tab');
+    }
+    await expect(page.getByRole('button', { name: 'Copy prompt', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
     await expect(page.getByText('Copied. Paste it wherever you are working.')).toBeVisible();
     const copy = await app.evaluate(async ({ clipboard }) => clipboard.readText());
     expect(copy).toBe('Add regression tests for expired sessions.');
@@ -276,6 +291,45 @@ test('production build opens with an isolated preload and settings bridge', asyn
     ).toEqual([]);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
+    const saved = await page.evaluate(async () =>
+      window.mira!.keys.save('openai', 'synthetic-os-storage-fixture'),
+    );
+    let encryptedRoundtrip = false;
+    if (saved.ok) {
+      expect((await page.evaluate(async () => window.mira!.keys.status())).openai).toBe(true);
+      const ciphertext = await readFile(path.join(profile, 'keys.enc'));
+      expect(ciphertext.includes(Buffer.from('synthetic-os-storage-fixture'))).toBe(false);
+      encryptedRoundtrip = await app.evaluate(
+        ({ safeStorage }, bytes) =>
+          JSON.parse(safeStorage.decryptString(Buffer.from(bytes))).openai ===
+          'synthetic-os-storage-fixture',
+        [...ciphertext],
+      );
+      expect(encryptedRoundtrip).toBe(true);
+      expect((await page.evaluate(async () => window.mira!.keys.save('openai', ''))).ok).toBe(true);
+      expect((await page.evaluate(async () => window.mira!.keys.status())).openai).toBe(false);
+    } else {
+      expect((await page.evaluate(async () => window.mira!.keys.status())).openai).toBe(false);
+    }
+    await mkdir('test-results', { recursive: true });
+    await writeFile(
+      'test-results/desktop-contract.json',
+      JSON.stringify(
+        {
+          schemaVersion: 1,
+          platform: process.platform,
+          architecture: process.arch,
+          packaged: await app.evaluate(({ app }) => app.isPackaged),
+          keyboardPrepareAndCopy: true,
+          cameraDenied: true,
+          encryptedRoundtrip,
+          secureStoreSave: saved.ok,
+          liveProviderCalls: false,
+        },
+        null,
+        2,
+      ) + '\n',
+    );
   } finally {
     await app.close();
     await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
