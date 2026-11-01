@@ -142,6 +142,23 @@ export function registerStudio(): void {
   });
 
   handle('mira:studio:get', () => state);
+  handle(
+    'mira:studio:cancelActive',
+    (_event, value: unknown) => {
+      const id = text(value, 'Session ID', 64);
+      if (state.sessionId !== id || state.phase === 'delivering')
+        throw new MiraError('action_invalid', 'No cancellable session matches this request');
+      sessions.cancelCurrent(id);
+      metadata.delete(id);
+      publish({
+        phase: 'idle',
+        sessionId: null,
+        error: null,
+        notice: 'Session cancelled. Your previous draft is preserved.',
+      });
+    },
+    ['workspace'],
+  );
   handle('mira:studio:start', (event, value: unknown) => {
     if (state.phase !== 'idle')
       throw new MiraError('action_invalid', 'Another operation is active');

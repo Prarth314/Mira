@@ -68,6 +68,15 @@ beforeEach(async () => {
   studio.registerStudio();
 });
 describe('privileged studio orchestration (real handlers, synthetic external dependencies)', () => {
+  it('lets the workspace cancel an overlay session without letting stale IDs cancel a new one', async () => {
+    mock.role = 'overlay';
+    const { id } = invoke('start', 'dictate') as { id: string };
+    mock.handlers.get('mira:studio:cancelActive')!({ sender: { id: 2 } }, id);
+    const next = invoke('start', 'dictate') as { id: string };
+    expect(() => invoke('cancelActive', id)).toThrow();
+    expect(state().sessionId).toBe(next.id);
+    invoke('cancel', next.id);
+  });
   it('local preparation needs no key and explicit copy includes only selected context', async () => {
     mock.key = '';
     await invoke('prepare', { prompt: 'Keep auth.ts unchanged.', mode: 'dictate' });

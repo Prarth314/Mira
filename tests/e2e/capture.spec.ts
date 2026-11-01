@@ -124,6 +124,11 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
           }),
         )
         .toBeGreaterThan(200);
+      await page.getByRole('button', { name: 'Cancel', exact: true }).focus();
+      await page.keyboard.press('Enter');
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).phase))
+        .toBe('idle');
       await overlay.getByRole('button', { name: 'Dismiss overlay' }).click();
       await expect
         .poll(async () => page.evaluate(async () => (await window.mira!.studio.state()).phase))

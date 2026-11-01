@@ -256,14 +256,14 @@ const App: React.FC = () => {
                     )}
                     {state.phase === 'recording' ? 'Finish recording' : 'Start recording'}
                   </button>
-                  {active && (studio.ownsSession || busy) && (
+                  {active && state.sessionId && (
                     <button
                       className="secondary-button"
                       onClick={() => {
                         if (studio.ownsSession) void studio.cancel();
                         else if (state.sessionId)
                           void api?.studio
-                            .cancel(state.sessionId)
+                            .cancelActive(state.sessionId)
                             .catch(() => studio.setError('Could not cancel this session.'));
                       }}
                     >

@@ -37,6 +37,7 @@ export interface StudioApi {
   chunk(id: string, data: ArrayBuffer): Promise<void>;
   finish(id: string): Promise<void>;
   cancel(id: string): Promise<void>;
+  cancelActive(id: string): Promise<void>;
   prepare(prompt: string, mode: VoiceMode): Promise<void>;
   refine(id: string): Promise<void>;
   edit(id: string, prompt: string): Promise<void>;

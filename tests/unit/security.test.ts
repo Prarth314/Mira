@@ -55,6 +55,11 @@ describe('actual privileged IPC and navigation policy', () => {
     expect(() => mock.handlers.get('mira:keys:save')!(overlay.event)).toThrow();
     mock.handlers.get('mira:keys:save')!(workspace.event);
     expect(action).toHaveBeenCalledTimes(1);
+    const cancellation = vi.fn();
+    handle('mira:studio:cancelActive', cancellation, ['workspace']);
+    expect(() => mock.handlers.get('mira:studio:cancelActive')!(overlay.event)).toThrow();
+    mock.handlers.get('mira:studio:cancelActive')!(workspace.event);
+    expect(cancellation).toHaveBeenCalledTimes(1);
   });
   it('denies popups, webviews and external navigation and unregisters destroyed windows', () => {
     const target = window(30, 'workspace');

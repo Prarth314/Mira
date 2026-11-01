@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld('mira', {
     chunk: (id, data) => ipcRenderer.invoke('mira:studio:chunk', { id, data }),
     finish: (id) => ipcRenderer.invoke('mira:studio:finish', id),
     cancel: (id) => ipcRenderer.invoke('mira:studio:cancel', id),
+    cancelActive: (id) => ipcRenderer.invoke('mira:studio:cancelActive', id),
     prepare: (prompt, mode) => ipcRenderer.invoke('mira:studio:prepare', { prompt, mode }),
     refine: (id) => ipcRenderer.invoke('mira:studio:refine', id),
     edit: (id, prompt) => ipcRenderer.invoke('mira:studio:edit', { id, prompt }),

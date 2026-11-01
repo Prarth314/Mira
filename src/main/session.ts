@@ -71,4 +71,10 @@ export class SessionCoordinator {
     this.cancel(owner, this.current.id);
     return true;
   }
+
+  cancelCurrent(id: string): void {
+    if (!this.current || this.current.id !== id)
+      throw new MiraError('action_invalid', 'Session changed before cancellation');
+    this.cancel(this.current.owner, id);
+  }
 }
