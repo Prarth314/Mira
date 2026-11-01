@@ -56,7 +56,10 @@ function terminology(prompt: string) {
 function publish(patch: Partial<StudioState>): void {
   state = { ...state, ...patch };
   for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.webContents.send('mira:studio:state', state);
+    // WebContents can be destroyed before its BrowserWindow during teardown.
+    if (win.isDestroyed()) continue;
+    const contents = win.webContents;
+    if (!contents.isDestroyed()) contents.send('mira:studio:state', state);
   }
 }
 
@@ -136,7 +139,8 @@ async function prepare(original: string, session: VoiceSession, previous?: Draft
 
 export function registerStudio(): void {
   app.on('web-contents-created', (_event, contents) => {
-    const cancelOwner = () => cancelStudioOwner(contents.id);
+    const owner = contents.id;
+    const cancelOwner = () => cancelStudioOwner(owner);
     contents.once('destroyed', cancelOwner);
     contents.on('render-process-gone', cancelOwner);
   });

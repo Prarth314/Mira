@@ -8,10 +8,15 @@ const mock = vi.hoisted(() => ({
   copy: vi.fn(),
   role: 'workspace',
   key: 'synthetic-test-key',
+  windows: [] as {
+    isDestroyed: () => boolean;
+    webContents: { isDestroyed: () => boolean; send: (...args: unknown[]) => void };
+  }[],
+  appOn: vi.fn(),
 }));
 vi.mock('electron', () => ({
-  app: { on: vi.fn() },
-  BrowserWindow: { getAllWindows: () => [] },
+  app: { on: mock.appOn },
+  BrowserWindow: { getAllWindows: () => mock.windows },
   clipboard: { writeText: mock.copy },
 }));
 vi.mock('../../src/main/security', () => ({
@@ -58,6 +63,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mock.role = 'workspace';
   mock.key = 'synthetic-test-key';
+  mock.windows = [];
   mock.chat.mockResolvedValue({
     text: 'Keep auth.ts unchanged.',
     toolCalls: [],
@@ -68,6 +74,41 @@ beforeEach(async () => {
   studio.registerStudio();
 });
 describe('privileged studio orchestration (real handlers, synthetic external dependencies)', () => {
+  it('cancels a destroyed owner while notifying only surviving web contents', () => {
+    const { id } = invoke('start', 'dictate') as { id: string };
+    const deadSend = vi.fn(() => {
+      throw new TypeError('Object has been destroyed');
+    });
+    const liveSend = vi.fn();
+    mock.windows = [
+      { isDestroyed: () => false, webContents: { isDestroyed: () => true, send: deadSend } },
+      { isDestroyed: () => false, webContents: { isDestroyed: () => false, send: liveSend } },
+    ];
+    const listeners = new Map<string, () => void>();
+    let destroyed = false;
+    const contents = {
+      get id() {
+        if (destroyed) throw new TypeError('Object has been destroyed');
+        return 1;
+      },
+      once: (name: string, fn: () => void) => listeners.set(name, fn),
+      on: (name: string, fn: () => void) => listeners.set(name, fn),
+    };
+    const created = mock.appOn.mock.calls.find(([name]) => name === 'web-contents-created')![1];
+    created({}, contents);
+    destroyed = true;
+    expect(() => listeners.get('destroyed')!()).not.toThrow();
+    expect(state()).toMatchObject({ phase: 'idle', sessionId: null });
+    expect(deadSend).not.toHaveBeenCalled();
+    expect(liveSend).toHaveBeenCalledWith(
+      'mira:studio:state',
+      expect.objectContaining({ phase: 'idle' }),
+    );
+    expect(() => invoke('chunk', { id, data: new ArrayBuffer(2) })).toThrow();
+    expect(() => listeners.get('render-process-gone')!()).not.toThrow();
+    const next = invoke('start', 'dictate') as { id: string };
+    invoke('cancel', next.id);
+  });
   it('lets the workspace cancel an overlay session without letting stale IDs cancel a new one', async () => {
     mock.role = 'overlay';
     const { id } = invoke('start', 'dictate') as { id: string };

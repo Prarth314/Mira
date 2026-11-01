@@ -24,6 +24,13 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
     env: { ...env, NODE_ENV: 'production' },
   });
   try {
+    await app.evaluate(({ app }) => {
+      const diagnostics = { uncaught: 0 };
+      Object.assign(app, { captureLifecycleDiagnostics: diagnostics });
+      process.on('uncaughtExceptionMonitor', () => {
+        diagnostics.uncaught++;
+      });
+    });
     const page = await app.firstWindow();
     await page.waitForFunction(() => !!window.mira);
     await test.step('explicit setup check releases its temporary stream', async () => {
@@ -316,6 +323,13 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
         )
         .toBe('ended');
     });
+    expect(
+      await app.evaluate(
+        ({ app }) =>
+          (app as typeof app & { captureLifecycleDiagnostics: { uncaught: number } })
+            .captureLifecycleDiagnostics.uncaught,
+      ),
+    ).toBe(0);
   } finally {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
