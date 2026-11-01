@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "version": "1.0.0",
+  "description": "Authored deterministic fixtures and explicitly unmeasured audio cases; not a gold speech dataset.",
+  "cases": [
+    {
+      "id": "technical-paths",
+      "split": "development",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Do not change src/auth.ts or sessionTTL at 300.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Do not change src/auth.ts or sessionTTL at 300.",
+      "expectedTokens": [
+        "src/auth.ts",
+        "sessionTTL",
+        "300"
+      ],
+      "constraints": [
+        {
+          "id": "negation",
+          "description": "Prohibits changing existing values",
+          "requiredPhrases": [
+            "do not"
+          ]
+        }
+      ],
+      "expectedSuggestions": []
+    },
+    {
+      "id": "lost-constraints",
+      "split": "development",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Do not change sessionTTL at 300.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Do not change sessionTTL at 300.",
+      "expectedTokens": [
+        "sessionTTL",
+        "300"
+      ],
+      "constraints": [
+        {
+          "id": "negation",
+          "requiredPhrases": [
+            "do not"
+          ]
+        }
+      ],
+      "expectedSuggestions": [],
+      "proposedRefinement": "Change the timeout.",
+      "expectedFallback": true
+    },
+    {
+      "id": "spelled-filename",
+      "split": "development",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Fix use studio dot tee ess.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Fix use studio dot tee ess.",
+      "expectedTokens": [],
+      "constraints": [],
+      "expectedSuggestions": [
+        {
+          "phrase": "use studio dot tee ess",
+          "candidates": [
+            "hooks/useStudio.ts"
+          ]
+        }
+      ],
+      "files": [
+        "hooks/useStudio.ts"
+      ]
+    },
+    {
+      "id": "ambiguous-file",
+      "split": "held-out",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Fix use studio.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Fix use studio.",
+      "expectedTokens": [],
+      "constraints": [],
+      "expectedSuggestions": [
+        {
+          "phrase": "use studio",
+          "candidates": [
+            "a/useStudio.ts",
+            "b/useStudio.ts"
+          ]
+        }
+      ],
+      "files": [
+        "a/useStudio.ts",
+        "b/useStudio.ts"
+      ]
+    },
+    {
+      "id": "spelled-symbol",
+      "split": "held-out",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Keep session t t l unchanged.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Keep session t t l unchanged.",
+      "expectedTokens": [],
+      "constraints": [],
+      "expectedSuggestions": [
+        {
+          "phrase": "session t t l",
+          "candidates": [
+            "sessionTTL"
+          ]
+        }
+      ],
+      "files": [
+        "auth.ts"
+      ],
+      "symbols": [
+        {
+          "name": "sessionTTL",
+          "path": "auth.ts"
+        }
+      ]
+    },
+    {
+      "id": "no-match",
+      "split": "held-out",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Discuss tomorrow with the team.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Discuss tomorrow with the team.",
+      "expectedTokens": [],
+      "constraints": [],
+      "expectedSuggestions": [],
+      "files": [
+        "auth.ts"
+      ]
+    },
+    {
+      "id": "flags-and-version",
+      "split": "held-out",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Keep --dry-run and version 2.4.1 without changing 8080.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Keep --dry-run and version 2.4.1 without changing 8080.",
+      "expectedTokens": [
+        "--dry-run",
+        "2.4.1",
+        "8080"
+      ],
+      "constraints": [
+        {
+          "id": "without",
+          "requiredPhrases": [
+            "without changing"
+          ]
+        }
+      ],
+      "expectedSuggestions": []
+    },
+    {
+      "id": "text-deletion-example",
+      "split": "development",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Keep the session unchanged.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Keep session unchanged.",
+      "expectedTokens": [],
+      "constraints": [],
+      "expectedSuggestions": []
+    },
+    {
+      "id": "synthetic-empty-text",
+      "split": "held-out",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "",
+      "expectedTokens": [],
+      "constraints": [],
+      "expectedSuggestions": []
+    },
+    {
+      "id": "public-jfk",
+      "split": "development",
+      "source": {
+        "kind": "public-audio",
+        "reference": "whisper.cpp samples/jfk.wav at pinned upstream commit",
+        "permission": "Public upstream sample; inspect upstream licensing before redistribution",
+        "licenseReference": "https://github.com/ggml-org/whisper.cpp/blob/master/LICENSE"
+      },
+      "referenceTranscript": {
+        "text": null,
+        "reviewStatus": "needs-independent-human-transcript",
+        "reviewedBy": null
+      },
+      "audioReference": "vendor/whisper/whisper.cpp-306c88f4d1286aec1bf96e544632897886af5501/samples/jfk.wav"
+    },
+    {
+      "id": "noise-and-silence-audio",
+      "split": "held-out",
+      "source": {
+        "kind": "planned-synthetic-audio",
+        "reference": null,
+        "permission": "Generate locally; no recording collected"
+      },
+      "referenceTranscript": {
+        "text": null,
+        "reviewStatus": "not-collected",
+        "reviewedBy": null
+      }
+    },
+    {
+      "id": "interrupted-real-speech",
+      "split": "held-out",
+      "source": {
+        "kind": "planned-consented-audio",
+        "reference": null,
+        "permission": "Explicit speaker consent required; not collected"
+      },
+      "referenceTranscript": {
+        "text": null,
+        "reviewStatus": "not-collected",
+        "reviewedBy": null
+      }
+    }
+  ]
+}

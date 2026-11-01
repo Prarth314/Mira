@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 test('bundled Whisper transcribes official sample through owned IPC', async () => {
-  test.skip(process.env.MIRA_SPEECH_TEST !== '1', 'Opt-in: downloads the pinned 148 MB model.');
+  if (process.env.MIRA_SPEECH_TEST !== '1')
+    throw new Error('Use npm run test:speech; this downloads the pinned model.');
   test.setTimeout(180_000);
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-speech-test-'));
   const sample = await fs.readFile(

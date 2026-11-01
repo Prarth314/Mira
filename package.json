@@ -18,7 +18,11 @@
     "test:e2e": "npm run build && playwright test",
     "prepare:speech": "node scripts/prepare-whisper.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,mts,js,mjs,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,mts,js,mjs,css}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,mts,js,mjs,css}\"",
+    "test:speech": "npm run build && cross-env MIRA_SPEECH_TEST=1 playwright test --config playwright.evaluation.config.ts --project speech",
+    "test:performance": "npm run build && cross-env MIRA_PERFORMANCE_TEST=1 playwright test --config playwright.evaluation.config.ts --project performance",
+    "test:native": "npm run build && cross-env MIRA_NATIVE_TEST=1 playwright test --config playwright.evaluation.config.ts --project native",
+    "evaluate": "node scripts/evaluate.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

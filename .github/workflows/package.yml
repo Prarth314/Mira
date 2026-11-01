@@ -6,6 +6,18 @@ on:
     paths:
       - 'scripts/**'
       - 'src/**'
+      - 'App.tsx'
+      - 'components/**'
+      - 'hooks/**'
+      - 'public/**'
+      - 'styles.css'
+      - 'index.html'
+      - 'index.tsx'
+      - 'overlay.html'
+      - 'preload.js'
+      - 'vite.config.mts'
+      - 'playwright*.ts'
+      - 'tests/**'
       - 'package*.json'
       - '.github/workflows/package.yml'
 permissions:

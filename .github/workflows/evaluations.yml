@@ -1,0 +1,46 @@
+name: Optional desktop measurements
+on:
+  workflow_dispatch:
+    inputs:
+      speech:
+        description: Run public-sample speech (downloads pinned model)
+        type: boolean
+        default: true
+      performance:
+        description: Run startup, indexing, cancellation and speech measurements
+        type: boolean
+        default: false
+      native:
+        description: Attempt Windows paste into disposable fixture only
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run prepare:speech
+      - shell: pwsh
+        run: Start-Service Audiosrv
+      - run: npm run test:speech
+        if: inputs.speech
+      - run: npm run test:performance
+        if: inputs.performance
+      - run: npm run test:native
+        if: inputs.native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: optional-measurements-windows
+          path: |
+            test-results/speech-benchmark.json
+            test-results/desktop-performance.json
+          if-no-files-found: warn
+          retention-days: 7
