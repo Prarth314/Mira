@@ -5,17 +5,20 @@ import type { ProviderName } from '../types/provider';
 import { atomicWrite, serialQueue } from './atomic-file';
 import { providerName, record } from './validation';
 import { MiraError } from '../types/MiraError';
+import { text } from './validation';
 
 export type Settings = {
   defaultProvider: ProviderName;
   autoSend: boolean;
   showAdvancedProviders: boolean;
+  microphoneId: string;
 };
 
 const DEFAULTS: Settings = {
   defaultProvider: 'anthropic',
   autoSend: false,
   showAdvancedProviders: false,
+  microphoneId: 'default',
 };
 
 function settingsPath(): string {
@@ -30,7 +33,14 @@ export function validateSettings(value: unknown): Partial<Settings> {
   const result: Partial<Settings> = {};
   for (const key of Object.keys(input)) {
     if (key === 'defaultProvider') result.defaultProvider = providerName(input[key]);
-    else if (key === 'autoSend' || key === 'showAdvancedProviders') {
+    else if (key === 'microphoneId') {
+      const id = text(input[key], 'Microphone selection', 256);
+      if (
+        [...id].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
+      )
+        throw new MiraError('action_invalid', 'Invalid microphone selection');
+      result.microphoneId = id;
+    } else if (key === 'autoSend' || key === 'showAdvancedProviders') {
       if (typeof input[key] !== 'boolean') throw new MiraError('action_invalid', `Invalid ${key}`);
       result[key] = input[key];
     } else throw new MiraError('action_invalid', `Unknown setting: ${key}`);

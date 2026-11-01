@@ -7,12 +7,14 @@ import {
   Tray,
   Menu,
   nativeImage,
+  powerMonitor,
 } from 'electron';
 import path from 'node:path';
 import { registerIpc } from './ipc';
 import { toggleOverlay, destroyOverlay } from './overlay-window';
 import { handle, isTrustedUrl, secureWindow, windowUrl } from './security';
 import { SpeechScratch } from './speech-scratch';
+import { cancelStudioOwner, cancelAllStudio } from './studio';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -49,6 +51,7 @@ function showMainWindow(): void {
     win.on('closed', () => {
       if (mainWindow === win) mainWindow = null;
     });
+    win.on('hide', () => cancelStudioOwner(win.webContents.id));
     mainWindow = win;
   }
   mainWindow.show();
@@ -89,6 +92,21 @@ if (!app.requestSingleInstanceLock()) {
       );
     });
     registerIpc();
+    handle(
+      'mira:desktop:status',
+      () => ({
+        shortcuts: {
+          record: globalShortcut.isRegistered('CommandOrControl+Shift+Space'),
+          workspace: globalShortcut.isRegistered('CommandOrControl+Shift+M'),
+        },
+      }),
+      ['workspace'],
+    );
+    powerMonitor.on('suspend', () =>
+      cancelAllStudio(
+        'Recording cancelled because the computer is sleeping. Start a new session after waking.',
+      ),
+    );
     handle('mira:window:show', () => {
       showMainWindow();
       return { ok: true };

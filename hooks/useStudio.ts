@@ -19,6 +19,7 @@ export function useStudio() {
     stream: MediaStream;
     context: AudioContext;
     node: AudioWorkletNode;
+    dispose?: () => void;
   } | null>(null);
   const pending = useRef<Promise<void>>(Promise.resolve());
   const chunkError = useRef<Error | null>(null);
@@ -28,6 +29,7 @@ export function useStudio() {
   const cleanup = useCallback((id?: string) => {
     if (id && capture.current?.id !== id) return;
     if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
     const current = capture.current;
     capture.current = null;
     if (current && flushDone.current?.id === current.id) {
@@ -36,6 +38,9 @@ export function useStudio() {
     }
     current?.stream.getTracks().forEach((track) => track.stop());
     if (current) {
+      current.dispose?.();
+      current.node.port.onmessage = null;
+      current.node.onprocessorerror = null;
       current.node.port.onmessage = null;
       current.node.port.close();
     }
@@ -105,6 +110,8 @@ export function useStudio() {
       let acquired: MediaStream | null = null;
       let audioContext: AudioContext | null = null;
       try {
+        const settings = await window.mira!.settings.get();
+        if (token !== generation.current) return;
         ({ id } = await api.start(mode));
         if (token !== generation.current) {
           await api.cancel(id);
@@ -113,7 +120,13 @@ export function useStudio() {
         owner.current = id;
         setOwnsSession(true);
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { channelCount: 1, echoCancellation: true },
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            ...(settings.microphoneId !== 'default'
+              ? { deviceId: { exact: settings.microphoneId } }
+              : {}),
+          },
         });
         acquired = stream;
         if (token !== generation.current) {
@@ -151,13 +164,9 @@ export function useStudio() {
           setError(message);
           void cancel();
         };
-        stream
-          .getAudioTracks()[0]
-          ?.addEventListener(
-            'ended',
-            () => failCapture('Microphone disconnected. Reconnect it and try again.'),
-            { once: true },
-          );
+        const track = stream.getAudioTracks()[0];
+        const ended = () => failCapture('Microphone disconnected. Reconnect it and try again.');
+        track?.addEventListener('ended', ended, { once: true });
         node.onprocessorerror = () =>
           failCapture('Audio processing stopped. Please start a new recording.');
         node.port.onmessage = (event: MessageEvent<ArrayBuffer | 'flushed'>) => {
@@ -190,6 +199,11 @@ export function useStudio() {
         source.connect(meter);
         source.connect(node);
         node.connect(context.destination);
+        capture.current.dispose = () => {
+          track?.removeEventListener('ended', ended);
+          source.disconnect();
+          meter.disconnect();
+        };
         setAnalyser(meter);
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(
@@ -217,6 +231,14 @@ export function useStudio() {
           void finish();
         }, 119_000);
       } catch (e) {
+        if (token === generation.current)
+          setError(
+            e instanceof DOMException && e.name === 'OverconstrainedError'
+              ? 'Selected microphone is unavailable. Choose another microphone in Speech setup.'
+              : e instanceof Error
+                ? e.message
+                : 'Could not start microphone',
+          );
         if (token === generation.current) cleanup(id);
         acquired?.getTracks().forEach((track) => track.stop());
         void audioContext?.close().catch(() => undefined);
@@ -225,8 +247,6 @@ export function useStudio() {
           owner.current = null;
           setOwnsSession(false);
         }
-        if (token === generation.current)
-          setError(e instanceof Error ? e.message : 'Could not start microphone');
       } finally {
         if (token === generation.current) {
           startingRef.current = false;
@@ -239,7 +259,17 @@ export function useStudio() {
 
   useEffect(() => {
     if (!api) return;
-    const off = api.onState(setState);
+    const off = api.onState((next) => {
+      if (owner.current && next.sessionId !== owner.current) {
+        generation.current++;
+        cleanup(owner.current);
+        owner.current = null;
+        startingRef.current = false;
+        setStarting(false);
+        setOwnsSession(false);
+      }
+      setState(next);
+    });
     void api
       .state()
       .then(setState)

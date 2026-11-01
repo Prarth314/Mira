@@ -1,12 +1,13 @@
 import { app } from 'electron';
 import { spawn } from 'node:child_process';
 import { promises as fs, createReadStream } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { MiraError } from '../types/MiraError';
 import { writeInt16PcmAsWav } from './wav';
 import { MODEL } from './model-info';
 import { SpeechScratch } from './speech-scratch';
+import { runSpeechProcess } from './speech-process';
 
 let cachedBinary: string | null = null;
 let modelReady: Promise<string> | null = null;
@@ -97,19 +98,28 @@ async function ensureModel(): Promise<string> {
   const controller = new AbortController();
   downloadController = controller;
   modelReady = (async () => {
-    if (await validModel()) return modelPath();
+    if (await validModel()) {
+      controller.signal.throwIfAborted();
+      return modelPath();
+    }
     await fs.mkdir(modelDir(), { recursive: true });
+    const profile = await fs.realpath(app.getPath('userData'));
+    if (
+      (await fs.lstat(modelDir())).isSymbolicLink() ||
+      path.dirname(await fs.realpath(modelDir())) !== profile
+    )
+      throw new MiraError('stt_failed', 'Model storage must remain inside the app profile.');
     const disk = await fs.statfs(modelDir());
     if (Number(disk.bavail) * Number(disk.bsize) < MODEL.sizeBytes + 10 * 1024 * 1024) {
       throw new MiraError('stt_failed', 'Not enough free disk space for the speech model.');
     }
-    const partial = `${modelPath()}.partial`;
+    const partial = `${modelPath()}.${randomUUID()}.partial`;
     const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(10 * 60_000)]);
     try {
       const response = await fetch(MODEL.url, { signal });
       if (!response.ok || !response.body)
         throw new MiraError('stt_failed', 'Could not download speech model.');
-      const writer = await fs.open(partial, 'w', 0o600);
+      const writer = await fs.open(partial, 'wx', 0o600);
       let downloaded = 0;
       try {
         for await (const chunk of response.body) {
@@ -133,14 +143,12 @@ async function ensureModel(): Promise<string> {
     } finally {
       await fs.rm(partial, { force: true });
     }
-  })()
-    .catch((error: unknown) => {
+  })().finally(() => {
+    if (downloadController === controller) {
+      downloadController = null;
       modelReady = null;
-      throw error;
-    })
-    .finally(() => {
-      if (downloadController === controller) downloadController = null;
-    });
+    }
+  });
   return modelReady;
 }
 
@@ -160,34 +168,11 @@ export async function transcribePcm(pcm: Buffer, signal?: AbortSignal): Promise<
     const wav = path.join(directory, 'input.wav');
     const output = path.join(directory, 'out');
     await writeInt16PcmAsWav(pcm, wav);
-    await new Promise<void>((resolve, reject) => {
-      const child = spawn(
-        binary,
-        ['-m', modelPath(), '-f', wav, '-otxt', '-of', output, '-nt', '-l', 'en', '-t', '4'],
-        {
-          signal,
-          windowsHide: true,
-          timeout: 120_000,
-        },
-      );
-      let failed = false;
-      child.stdout.resume();
-      child.stderr.resume();
-      child.on('error', () => {
-        failed = true;
-      });
-      child.on('close', (code) => {
-        if (signal?.aborted) reject(signal.reason);
-        else if (!failed && code === 0) resolve();
-        else
-          reject(
-            new MiraError(
-              'stt_failed',
-              'Speech processing failed or timed out. Try a shorter recording.',
-            ),
-          );
-      });
-    });
+    await runSpeechProcess(
+      binary,
+      ['-m', modelPath(), '-f', wav, '-otxt', '-of', output, '-nt', '-l', 'en', '-t', '4'],
+      { signal },
+    );
     signal?.throwIfAborted();
     return (await fs.readFile(`${output}.txt`, 'utf8')).trim();
   } finally {

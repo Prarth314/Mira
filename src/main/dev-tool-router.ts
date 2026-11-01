@@ -41,7 +41,12 @@ export async function routeDevPrompt(
   const target = classifyApp(app);
   if (target === 'unknown')
     throw new MiraError('action_invalid', 'Unsupported destination. Copy the prompt instead.');
-  if (!app.processId || app.processId === process.pid)
+  if (
+    !Number.isSafeInteger(app.processId) ||
+    !app.processId ||
+    app.processId < 1 ||
+    app.processId === process.pid
+  )
     throw new MiraError(
       'action_invalid',
       'Select an external developer tool using the recording shortcut.',

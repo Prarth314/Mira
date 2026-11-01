@@ -59,6 +59,9 @@ describe('durable settings', () => {
     expect(await fs.readFile(path.join(state.directory, backup), 'utf8')).toBe(contents);
   });
   it('rejects unknown fields, invalid types and prototype-like properties', () => {
+    expect(() => validateSettings({ microphoneId: 1 })).toThrow();
+    expect(() => validateSettings({ microphoneId: 'a\n' })).toThrow();
+    expect(validateSettings({ microphoneId: 'default' })).toEqual({ microphoneId: 'default' });
     expect(() => validateSettings({ autoSend: 'true' })).toThrow();
     expect(() => validateSettings({ defaultProvider: 'other' })).toThrow();
     expect(() => validateSettings(JSON.parse('{"__proto__":{}}'))).toThrow();

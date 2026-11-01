@@ -929,3 +929,39 @@ textarea {
   line-height: 1.6;
   margin-top: 3px;
 }
+.speech-setup {
+  padding: 20px;
+  margin: 20px 0;
+}
+.speech-setup h2 {
+  color: #ded0ff;
+  font-size: 16px;
+}
+.speech-setup p,
+.workflow-status {
+  color: #aeb4c6;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 8px 0;
+}
+.speech-setup label {
+  display: block;
+  color: #ded0ff;
+  margin-top: 12px;
+  font-size: 12px;
+}
+.speech-setup select {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  background: #090a10;
+  color: #ddd8ed;
+  border: 1px solid #ffffff25;
+  border-radius: 8px;
+}
+.setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}

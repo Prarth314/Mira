@@ -26,6 +26,10 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
   try {
     const page = await app.firstWindow();
     await page.waitForFunction(() => !!window.mira);
+    await test.step('explicit setup check releases its temporary stream', async () => {
+      await page.getByRole('button', { name: 'Check microphone access', exact: true }).click();
+      await expect(page.getByText('Microphone access checked.', { exact: false })).toBeVisible();
+    });
     await test.step('open the recorder', async () => {
       await page.getByRole('button', { name: 'Start recording', exact: true }).click();
     });
@@ -108,6 +112,132 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
       await overlay.getByRole('button', { name: 'Dismiss overlay' }).click();
       await expect
         .poll(async () => page.evaluate(async () => (await window.mira!.studio.state()).phase))
+        .toBe('idle');
+    });
+    await test.step('device loss and workspace hide cancel capture and release tracks', async () => {
+      await page.evaluate(() => {
+        const original = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+        Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+          configurable: true,
+          value: async (constraints: MediaStreamConstraints) => {
+            const stream = await original(constraints);
+            Object.assign(window, { syntheticCapture: stream });
+            return stream;
+          },
+        });
+      });
+      await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .toBeGreaterThan(200);
+      await page.evaluate(() =>
+        (window as unknown as { syntheticCapture: MediaStream }).syntheticCapture
+          .getTracks()[0]
+          .dispatchEvent(new Event('ended')),
+      );
+      await expect(page.getByRole('alert')).toContainText('Microphone disconnected');
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              (
+                window as unknown as { syntheticCapture: MediaStream }
+              ).syntheticCapture.getTracks()[0].readyState,
+          ),
+        )
+        .toBe('ended');
+      await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .toBeGreaterThan(200);
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .find((win) => win.getTitle() === 'Mira')!
+          .hide(),
+      );
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).phase))
+        .toBe('idle');
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              (
+                window as unknown as { syntheticCapture: MediaStream }
+              ).syntheticCapture.getTracks()[0].readyState,
+          ),
+        )
+        .toBe('ended');
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .find((win) => win.getTitle() === 'Mira')!
+          .show(),
+      );
+    });
+    await test.step('an unavailable selected microphone fails safely without silently switching', async () => {
+      await page.evaluate(() => {
+        const original = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+        Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+          configurable: true,
+          value: (constraints: MediaStreamConstraints) => {
+            Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+              configurable: true,
+              value: original,
+            });
+            if (
+              typeof constraints.audio !== 'object' ||
+              (constraints.audio.deviceId as ConstrainDOMStringParameters)?.exact !==
+                'synthetic-missing-device'
+            )
+              throw new Error('Selected device was not requested');
+            return Promise.reject(
+              new DOMException('Synthetic unavailable device', 'OverconstrainedError'),
+            );
+          },
+        });
+      });
+      await page.evaluate(async () =>
+        window.mira!.settings.update({ microphoneId: 'synthetic-missing-device' }),
+      );
+      await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+      await expect(page.getByRole('alert')).toContainText('Selected microphone is unavailable');
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).phase))
+        .toBe('idle');
+      await page.evaluate(async () => window.mira!.settings.update({ microphoneId: 'default' }));
+    });
+    await test.step('simulated suspend and destruction of the owning overlay cancel sessions', async () => {
+      await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .toBeGreaterThan(200);
+      await app.evaluate(({ powerMonitor }) => {
+        powerMonitor.emit('suspend');
+      });
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).phase))
+        .toBe('idle');
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              (
+                window as unknown as { syntheticCapture: MediaStream }
+              ).syntheticCapture.getTracks()[0].readyState,
+          ),
+        )
+        .toBe('ended');
+      await page.getByRole('button', { name: 'Open compact recorder' }).click();
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .toBeGreaterThan(200);
+      await app.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows()
+          .find((win) => win.getTitle() !== 'Mira')!
+          .destroy();
+      });
+      await expect
+        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).phase))
         .toBe('idle');
     });
   } finally {

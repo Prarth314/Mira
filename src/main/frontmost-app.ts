@@ -13,12 +13,12 @@ export async function nativeScript(
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { windowsHide: true, signal, timeout: 10_000 });
     let out = '';
-    let err = '';
+    let stderr = '';
     child.stdout.on('data', (b: Buffer) => {
       out = (out + b.toString()).slice(-32_768);
     });
-    child.stderr.on('data', (b: Buffer) => {
-      err = (err + b.toString()).slice(-1024);
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr = (stderr + chunk.toString()).slice(-4096);
     });
     child.on('error', () =>
       reject(new MiraError('action_invalid', 'Native integration unavailable')),
@@ -29,7 +29,17 @@ export async function nativeScript(
         : reject(
             new MiraError(
               'action_invalid',
-              `Native integration failed (${code}): ${err.slice(0, 200)}`,
+              stderr.includes('Cannot activate destination')
+                ? 'Windows refused destination activation. Copy your prompt manually.'
+                : stderr.includes('Destination closed')
+                  ? 'The destination window closed. Copy your prompt manually.'
+                  : stderr.includes('Destination changed')
+                    ? 'Destination identity or focus changed. Copy your prompt manually.'
+                    : /Add-Type|Cannot find type|PSSecurityException|UnauthorizedAccess/i.test(
+                          stderr,
+                        )
+                      ? 'Native system API initialization was unavailable. Copy your prompt manually.'
+                      : `Native integration failed (${code}). Check destination and OS permissions.`,
             ),
           ),
     );

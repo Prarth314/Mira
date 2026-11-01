@@ -57,6 +57,9 @@ test('production build opens with an isolated preload and settings bridge', asyn
     expect(bridge.keys).toEqual({ anthropic: false, openai: false });
     expect(bridge.settings?.defaultProvider).toBe('anthropic');
     expect(bridge.node).toBe('undefined');
+    expect(
+      await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content'),
+    ).not.toContain('ws://');
     await page.getByLabel('Prefer to type?').fill('Add regression tests for expired sessions.');
     await page.getByRole('button', { name: 'Prepare instruction' }).click();
     await expect(page.getByLabel('Prepared prompt')).toHaveValue(
@@ -66,6 +69,15 @@ test('production build opens with an isolated preload and settings bridge', asyn
     await expect(page.getByText('Copied. Paste it wherever you are working.')).toBeVisible();
     const copy = await app.evaluate(async ({ clipboard }) => clipboard.readText());
     expect(copy).toBe('Add regression tests for expired sessions.');
+    await page.getByLabel('Prepared prompt').fill('Keep sessionTTL unchanged at 300.');
+    await page.getByRole('button', { name: 'Refine reviewed text', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('reviewed instruction is preserved');
+    await expect(page.getByLabel('Prepared prompt')).toHaveValue(
+      'Keep sessionTTL unchanged at 300.',
+    );
+    expect(
+      await page.evaluate(async () => (await window.mira!.studio.state()).draft!.original),
+    ).toBe('Add regression tests for expired sessions.');
     await page.screenshot({ path: 'test-results/workspace.png', fullPage: true });
     const invalidProviderRejected = await page.evaluate(async () => {
       try {

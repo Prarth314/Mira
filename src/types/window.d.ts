@@ -45,6 +45,7 @@ declare global {
     };
     mira?: {
       studio: StudioApi;
+      desktop: { status(): Promise<{ shortcuts: { record: boolean; workspace: boolean } }> };
       diagnostics: {
         get: () => Promise<Record<string, unknown>>;
         copy: () => Promise<void>;
@@ -132,17 +133,20 @@ declare global {
           defaultProvider: ProviderName;
           autoSend: boolean;
           showAdvancedProviders: boolean;
+          microphoneId: string;
         }>;
         update: (
           patch: Partial<{
             defaultProvider: ProviderName;
             autoSend: boolean;
             showAdvancedProviders: boolean;
+            microphoneId: string;
           }>,
         ) => Promise<{
           defaultProvider: ProviderName;
           autoSend: boolean;
           showAdvancedProviders: boolean;
+          microphoneId: string;
         }>;
       };
     };

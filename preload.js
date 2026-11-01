@@ -5,6 +5,7 @@ function on(channel, callback) {
   return () => ipcRenderer.removeListener(channel, handler);
 }
 contextBridge.exposeInMainWorld('mira', {
+  desktop: { status: () => ipcRenderer.invoke('mira:desktop:status') },
   keys: {
     status: () => ipcRenderer.invoke('mira:keys:status'),
     save: (provider, key) => ipcRenderer.invoke('mira:keys:save', { provider, key }),
@@ -49,6 +50,7 @@ contextBridge.exposeInMainWorld('mira', {
     finish: (id) => ipcRenderer.invoke('mira:studio:finish', id),
     cancel: (id) => ipcRenderer.invoke('mira:studio:cancel', id),
     prepare: (prompt, mode) => ipcRenderer.invoke('mira:studio:prepare', { prompt, mode }),
+    refine: (id) => ipcRenderer.invoke('mira:studio:refine', id),
     edit: (id, prompt) => ipcRenderer.invoke('mira:studio:edit', { id, prompt }),
     correct: (id, suggestionId, path, remember) =>
       ipcRenderer.invoke('mira:studio:correct', { id, suggestionId, path, remember }),

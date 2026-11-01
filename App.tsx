@@ -18,6 +18,7 @@ import SettingsPanel from './components/SettingsPanel';
 import ProjectPanel from './components/ProjectPanel';
 import AudioVisualizer from './components/AudioVisualizer';
 import TerminologyReview from './components/TerminologyReview';
+import SpeechSetup from './components/SpeechSetup';
 import { useStudio } from './hooks/useStudio';
 import type { VoiceMode } from './src/types/studio';
 
@@ -146,6 +147,33 @@ const App: React.FC = () => {
               {studio.error || state.error}
             </div>
           )}
+          <p className="workflow-status" role="status" aria-live="polite">
+            {studio.starting
+              ? 'Waiting for microphone access…'
+              : state.phase === 'recording'
+                ? 'Recording. Your microphone is active.'
+                : state.phase === 'transcribing'
+                  ? 'Transcribing locally on your device…'
+                  : state.phase === 'preparing'
+                    ? 'Preparing your instruction locally…'
+                    : state.phase === 'refining'
+                      ? 'Refining with your selected cloud provider…'
+                      : state.phase === 'delivering'
+                        ? 'Completing your chosen action…'
+                        : (state.notice ??
+                          (draft
+                            ? 'Draft ready for review. Nothing is submitted automatically.'
+                            : 'Ready. Set up speech or prepare a typed instruction.'))}
+          </p>
+          <SpeechSetup
+            disabled={active || busy}
+            model={model}
+            progress={progress}
+            download={() => perform(download)}
+            refreshModel={async () => {
+              if (api) setModel(await api.model.status());
+            }}
+          />
           <ProjectPanel
             disabled={active || busy}
             onError={studio.setError}
@@ -345,6 +373,20 @@ const App: React.FC = () => {
                   <div className="review-actions">
                     <button
                       className="secondary-button"
+                      disabled={
+                        !api || !review.trim() || active || busy || draft.delivery === 'attempted'
+                      }
+                      onClick={() => {
+                        void perform(async () => {
+                          await api!.studio.edit(draft.id, review);
+                          await api!.studio.refine(draft.id);
+                        });
+                      }}
+                    >
+                      <Sparkles size={15} /> Refine reviewed text
+                    </button>
+                    <button
+                      className="secondary-button"
                       disabled={!review.trim() || active || busy}
                       onClick={() => {
                         void perform(() => saveAnd('copy'));
@@ -376,6 +418,10 @@ const App: React.FC = () => {
                       <Trash2 size={16} />
                     </button>
                   </div>
+                  <p className="delivery-note">
+                    Refine sends only the reviewed instruction to your configured provider and may
+                    incur provider charges. Attachments stay out of that request.
+                  </p>
                 </>
               ) : (
                 <div className="empty-review">
@@ -405,36 +451,6 @@ const App: React.FC = () => {
             </span>
             <span>Built for the space between thought and action.</span>
           </footer>
-          {model && !model.present && (
-            <div className="setup-strip">
-              <div>
-                <strong>Set up local speech</strong>
-                <p>
-                  Download the verified English model (~148 MB). Typed instructions work
-                  immediately.
-                </p>
-              </div>
-              <button
-                className="secondary-button"
-                disabled={busy || active || progress !== null}
-                onClick={() => {
-                  void perform(download);
-                }}
-              >
-                {progress !== null ? `Downloading ${progress}%` : 'Download model'}
-              </button>
-              {progress !== null && (
-                <button
-                  className="secondary-button"
-                  onClick={() => {
-                    void api?.model.cancel();
-                  }}
-                >
-                  Cancel download
-                </button>
-              )}
-            </div>
-          )}
         </section>
       </main>
     </div>
