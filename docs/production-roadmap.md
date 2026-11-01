@@ -2,6 +2,21 @@
 
 This is the active roadmap. Historical plans and research remain under `PLAN.md` and `docs/research/`. A checked item means implemented and verified as described, not independently certified production-ready.
 
+## Current desktop milestone — November 1, 2026
+
+See the [engineering evidence matrix](ENGINEERING_EVIDENCE.md) for current capability classifications and actual results. This milestone closes speech setup/device selection, owner-loss/suspend/worklet cleanup, model repair/interrupted-download retention, reviewed refinement and recovery gaps. It adds privileged boundary tests, explicit optional evaluation suites, real controlled Windows paste, repeatable desktop measurements, and keyboard/OS-storage verification.
+
+- [x] Inspect existing implementation and retain working architecture/attribution.
+- [x] Close core setup, reviewed refinement and lifecycle recovery defects.
+- [x] Exercise privileged handlers, real child-process exit, model failure transport and temporary storage.
+- [x] Run local desktop, synthetic-policy, public speech, controlled native and performance checks.
+- [x] Record measurement environment, sample counts, limits and unmeasured cases.
+- [x] Confirm remote CI/package conclusions in their linked run evidence (CI `41331722039`; packages `41331722381`).
+- [ ] Complete real microphone/application/assistive-technology and consented user studies.
+- [ ] Obtain signing/notarization credentials; validate authenticated public distribution and updates.
+
+The remaining unchecked external/release gates are not implied complete by the implementation milestone or its automated tests.
+
 ## Release contract
 
 Deliver a desktop voice workspace: record → transcribe → inspect/refine → choose destination → deliver. Windows first; macOS follows the same acceptance gates. English first. Local transcription; optional user-key cloud processing. No accounts, billing, autonomous shell execution, or unsupported platform claims in v1.

@@ -40,9 +40,35 @@ Opt-in public-sample transcription:
 
 ```powershell
 npm run prepare:speech
-npm run build
-$env:MIRA_SPEECH_TEST = '1'
-npx playwright test tests/e2e/speech.spec.ts
+npm run test:speech
+```
+
+The [current performance report](BENCHMARKS.md), [evaluation contract](EVALUATION.md), and [native acceptance matrix](NATIVE_ACCEPTANCE.md) separate actual measurements from mocked, injected and unperformed checks. Default CI runs no optional speech/performance/native tests as silent skips.
+
+## First-run and recovery walkthrough
+
+Use Speech setup to select an input, explicitly check microphone access, refresh status and verify/download the model. Type a synthetic instruction before recording to confirm the workspace is usable without provider credentials. Record in Dictate, review/edit, and copy only into a disposable document. Optional **Refine reviewed text** shares the reviewed instruction with the configured provider; explain that boundary before enabling it.
+
+Cancel during recording, hide/reopen the workspace, and confirm the microphone stops and prior draft remains. Test a disconnected selected input and recover explicitly rather than silently switching devices. Unsupported/corrupt preferences should remain untouched until an explicit reset creates a backup. Do not treat preference rollback as application-update rollback.
+
+## Feedback template
+
+Share synthetic reproduction steps and a reviewed diagnostic report; exclude keys, private recordings, source contents and sensitive paths.
+
+```text
+Build commit / installer SHA-256:
+OS release / architecture:
+Microphone model / connection type:
+Destination application and version (if any):
+Mode: Dictate / Refine (provider name only; never a key)
+Steps using a synthetic instruction:
+Expected behavior:
+Actual behavior:
+Cancelled / failed / recovered:
+Was text copied, paste attempted, or receipt independently checked?
+Keyboard / screen-reader observations:
+Reproducible: always / sometimes / once
+Permission to follow up / consented recording available: optional
 ```
 
 ## Public release blockers

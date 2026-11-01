@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "platform": "darwin",
+  "architecture": "arm64",
+  "packaged": false,
+  "keyboardPrepareAndCopy": true,
+  "cameraDenied": true,
+  "encryptedRoundtrip": true,
+  "secureStoreSave": true,
+  "liveProviderCalls": false
+}

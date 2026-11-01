@@ -1,0 +1,41 @@
+{
+  "dataset": "Upstream JFK public sample; one recording, not a general accuracy evaluation",
+  "sampleCount": 1,
+  "commit": "8fda466ccc7e740802e8891f74a14db129a924c1",
+  "wordErrorRate": null,
+  "referenceStatus": "No independently reviewed full reference transcript; phrase assertion only.",
+  "audioSeconds": 11,
+  "modelSetupMs": 4147,
+  "transcriptionMs": 57867,
+  "transcriptionRealTimeFactor": 5.2606363636363636,
+  "result": "Expected public-sample phrase recognized; draft remained unsubmitted",
+  "environment": {
+    "schemaVersion": 1,
+    "appVersion": "0.1.0",
+    "packaged": false,
+    "platform": "darwin",
+    "architecture": "arm64",
+    "osRelease": "25.6.0",
+    "electron": "45.1.0",
+    "chromium": "156.0.8078.49",
+    "logicalProcessors": 3,
+    "totalMemoryGiB": 7,
+    "mainProcessMemoryMiB": 205,
+    "modelVerified": true,
+    "speechRuntimeAvailable": true,
+    "modelDownloadActive": false
+  },
+  "nativeModeComparison": {
+    "boundary": "Same public WAV/model and new CLI process each time; excludes IPC/model hash/WAV preparation. Interleaved trials after the initial app inference; not independent cold boots.",
+    "defaultMs": [
+      36524.626875,
+      35094.24533300001,
+      35095.97583400001
+    ],
+    "cpuOnlyMs": [
+      19092.034958000004,
+      17852.152333999984,
+      18474.54358299999
+    ]
+  }
+}

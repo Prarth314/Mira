@@ -20,6 +20,8 @@ Mira turns spoken developer instructions into editable drafts using local speech
 
 The core loop is **record → transcribe → inspect → deliver**. You stay responsible for the instruction and its destination at every step.
 
+For a quick engineering review, see the [capability/evidence matrix](docs/ENGINEERING_EVIDENCE.md), [measured desktop results](docs/BENCHMARKS.md), and [five-minute demo](docs/DEMO.md). These distinguish implemented behavior, automated evidence, and remaining real-world validation.
+
 > **Current status: unsigned internal beta, version 0.1.0.** Windows and macOS packaging and automated desktop checks are in place. Public signing, notarization, authenticated updates, broader native compatibility testing, and observed beta validation remain release gates. A successful CI run is evidence about the checks it ran, not a claim of universal production readiness.
 
 ## Why Mira exists
@@ -54,6 +56,8 @@ Mira transcribes that instruction locally and prepares a draft. In **Dictate**, 
 
 Packaged builds include the speech runtime. Use the workspace's setup control to download the pinned English model before recording. The model is approximately **148 MB**; setup exposes progress and cancellation and verifies the expected size and checksum.
 
+In **Speech setup**, choose a microphone, explicitly check access, and refresh device/model status. The check stream is immediately stopped. Selection is saved locally for both workspace and compact recording. Permission recovery opens the OS microphone settings only when you choose it; shortcut conflicts have a workspace fallback.
+
 Development builds need the separate runtime preparation command described below. After runtime and model setup, **Dictate can transcribe without a network connection**. Initial setup and optional cloud refinement require network access.
 
 ### 2. Choose how to prepare the instruction
@@ -64,6 +68,8 @@ Development builds need the separate runtime preparation command described below
 | **Refine** | The spoken or typed instruction is sent to your selected Anthropic or OpenAI provider for restructuring. | Your own provider key, network access, and any provider usage charges. |
 
 Provider keys are configured in **Settings**. Mira does not load them from `.env.local`. There is no hosted Mira inference backend or account service in this build.
+
+You can also record in Dictate, edit the draft, then choose **Refine reviewed text**. That sends only the reviewed instruction, keeps the original transcript, and retains reviewed text if the provider fails or the loss checks reject its output. Cancelling refinement leaves the previous draft available.
 
 Refinement is a convenience, not a proof of semantic equivalence. The checks look for signs of lost filenames, identifiers, numbers, and negation; they cannot detect every change in meaning. Review the draft even when processing succeeds.
 
@@ -264,6 +270,10 @@ Read [PRIVACY.md](PRIVACY.md) for the current data-handling contract and [SECURI
 | `npm run build` | Build Electron main/preload and the production renderer. |
 | `npm run check` | Run lint, type checks, unit tests, and build. Formatting is checked separately. |
 | `npm run test:e2e` | Build and exercise the Electron app through Playwright. |
+| `npm run evaluate` | Run versioned offline synthetic policy fixtures; no audio or provider calls. |
+| `npm run test:speech` | Explicitly run the public-sample Whisper smoke test. |
+| `npm run test:performance` | Measure isolated startup, cancellation, indexing, memory and public-sample processing. |
+| `npm run test:native` | Windows only: test the native adapter against an explicitly focused disposable target. |
 | `npm run package:dir` | Prepare speech, build, and create an unpacked native application. |
 | `npm run package` | Prepare speech, build, and create native distribution artifacts without publishing. |
 
@@ -291,11 +301,10 @@ An opt-in test uses the public upstream English speech sample and the actual loc
 
 ```powershell
 npm run prepare:speech
-npm run build
-$env:MIRA_SPEECH_TEST = '1'
-npx playwright test tests/e2e/speech.spec.ts
-Remove-Item Env:MIRA_SPEECH_TEST
+npm run test:speech
 ```
+
+Optional measurement suites are separate from default CI and packaged smoke checks. They fail on an unsupported or improperly configured explicit invocation rather than appearing as skipped passes. See [evaluation definitions](docs/EVALUATION.md) and the [native acceptance matrix](docs/NATIVE_ACCEPTANCE.md).
 
 The recorded [Windows public-sample benchmark](docs/benchmarks/windows-public-sample.json) measured 1,564 ms for model verification, transcription, and draft preparation on 11 seconds of audio. It is **one sample on one environment**, excluding recording time, optional cloud refinement, and delivery. It is not a general accuracy result or latency guarantee. See [beta acceptance](docs/BETA_TESTING.md) for the evaluation method and limitations.
 
@@ -343,6 +352,11 @@ For vulnerabilities or accidental exposure of sensitive information, follow [SEC
 | Document | Use it for |
 | --- | --- |
 | [Production roadmap](docs/production-roadmap.md) | Active milestones, evidence, and remaining release gates. |
+| [Engineering evidence](docs/ENGINEERING_EVIDENCE.md) | Capability classifications, trust boundaries, tests, results, and limitations. |
+| [Benchmarks](docs/BENCHMARKS.md) | Repeatable measurements, environment, sample counts, and boundaries. |
+| [Evaluation](docs/EVALUATION.md) | Corpus format, matching/grading policies, and unmeasured cases. |
+| [Native acceptance](docs/NATIVE_ACCEPTANCE.md) | Observed native cases and unperformed hardware/application checks. |
+| [Demo and résumé guide](docs/DEMO.md) | Synthetic demonstration and evidence-limited portfolio claims. |
 | [Beta testing](docs/BETA_TESTING.md) | Internal downloads, native acceptance cases, and evaluation guidance. |
 | [Project-aware dictation](docs/PROJECT_AWARE_DICTATION.md) | Filename suggestions, local pronunciation management, and evaluation limits. |
 | [Privacy](PRIVACY.md) | Current processing, sharing, and retention behavior. |
