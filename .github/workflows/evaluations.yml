@@ -18,7 +18,11 @@ permissions:
   contents: read
 jobs:
   evaluate:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,20 +32,30 @@ jobs:
       - run: npm ci
       - run: npm run prepare:speech
       - shell: pwsh
+        if: runner.os == 'Windows'
         run: Start-Service Audiosrv
       - run: npm run test:speech
         if: inputs.speech
+      - name: Preserve speech report before another Playwright suite
+        if: inputs.speech
+        run: node -e "const fs=require('node:fs');fs.mkdirSync('release/measurements',{recursive:true});fs.copyFileSync('test-results/speech-benchmark.json','release/measurements/speech-benchmark.json')"
       - run: npm run test:performance
         if: inputs.performance
+      - name: Preserve performance report
+        if: inputs.performance
+        run: node -e "const fs=require('node:fs');fs.mkdirSync('release/measurements',{recursive:true});fs.copyFileSync('test-results/desktop-performance.json','release/measurements/desktop-performance.json')"
       - run: npm run test:native
-        if: inputs.native
+        if: inputs.native && runner.os == 'Windows'
+      - name: Preserve native report
+        if: inputs.native && runner.os == 'Windows'
+        run: node -e "const fs=require('node:fs');fs.mkdirSync('release/measurements',{recursive:true});fs.copyFileSync('test-results/native-delivery.json','release/measurements/native-delivery.json')"
+      - name: Native fixture scope
+        if: inputs.native && runner.os != 'Windows'
+        run: echo "The native fixture is Windows-only; no macOS native delivery result is claimed."
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: optional-measurements-windows
-          path: |
-            test-results/speech-benchmark.json
-            test-results/desktop-performance.json
-            test-results/native-delivery.json
+          name: optional-measurements-${{ matrix.os }}
+          path: release/measurements/*.json
           if-no-files-found: warn
           retention-days: 7
