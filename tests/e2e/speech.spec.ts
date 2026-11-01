@@ -82,6 +82,6 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
     );
   } finally {
     await app.close();
-    await fs.rm(profile, { recursive: true, force: true });
+    await fs.rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

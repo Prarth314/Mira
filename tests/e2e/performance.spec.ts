@@ -79,7 +79,12 @@ test('measure bounded desktop startup, cancellation, indexing and public-sample 
     for (let i = 0; i < 5; i++) {
       await page.getByRole('button', { name: 'Start recording', exact: true }).click();
       await expect
-        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .poll(() =>
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
+        )
         .toBeGreaterThan(200);
       const start = performance.now();
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -222,6 +227,6 @@ test('measure bounded desktop startup, cancellation, indexing and public-sample 
   } finally {
     await nativeSampler?.stop();
     if (app) await app.close();
-    await fs.rm(root, { recursive: true, force: true });
+    await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

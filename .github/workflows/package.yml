@@ -39,6 +39,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Record packaging environment
+        run: node -e "console.log(JSON.stringify({platform:process.platform,architecture:process.arch,node:process.version}))"
       - run: npm run package:dir
         if: runner.os != 'Windows'
         env:

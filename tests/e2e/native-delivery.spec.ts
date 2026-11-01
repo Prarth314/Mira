@@ -132,6 +132,6 @@ test('Windows native adapter pastes only into an owned disposable fixture', asyn
   } finally {
     if (!targetClosed) await target.close();
     await source.close();
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

@@ -17,6 +17,26 @@ export type DownloadProgress = (downloaded: number, total: number) => void;
 const modelDir = () => path.join(app.getPath('userData'), 'models');
 const modelPath = () => path.join(modelDir(), MODEL.name);
 
+export async function cleanupModelDownloads(): Promise<void> {
+  await fs.mkdir(modelDir(), { recursive: true });
+  const profile = await fs.realpath(app.getPath('userData'));
+  if (
+    (await fs.lstat(modelDir())).isSymbolicLink() ||
+    path.dirname(await fs.realpath(modelDir())) !== profile
+  )
+    throw new MiraError('stt_failed', 'Model storage must remain inside the app profile.');
+  const prefix = `${MODEL.name}.`;
+  for (const entry of await fs.readdir(modelDir(), { withFileTypes: true })) {
+    if (
+      entry.isFile() &&
+      !entry.isSymbolicLink() &&
+      entry.name.startsWith(prefix) &&
+      /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\.partial$/.test(entry.name.slice(prefix.length))
+    )
+      await fs.unlink(path.join(modelDir(), entry.name));
+  }
+}
+
 async function sha256OfFile(file: string): Promise<string> {
   const hash = createHash('sha256');
   for await (const chunk of createReadStream(file)) hash.update(chunk);
@@ -102,13 +122,7 @@ async function ensureModel(): Promise<string> {
       controller.signal.throwIfAborted();
       return modelPath();
     }
-    await fs.mkdir(modelDir(), { recursive: true });
-    const profile = await fs.realpath(app.getPath('userData'));
-    if (
-      (await fs.lstat(modelDir())).isSymbolicLink() ||
-      path.dirname(await fs.realpath(modelDir())) !== profile
-    )
-      throw new MiraError('stt_failed', 'Model storage must remain inside the app profile.');
+    await cleanupModelDownloads();
     const disk = await fs.statfs(modelDir());
     if (Number(disk.bavail) * Number(disk.bsize) < MODEL.sizeBytes + 10 * 1024 * 1024) {
       throw new MiraError('stt_failed', 'Not enough free disk space for the speech model.');

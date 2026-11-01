@@ -35,7 +35,10 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
     });
     await expect
       .poll(async () =>
-        page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0),
+        page.evaluate(async () => {
+          const next = await window.mira!.studio.state();
+          return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+        }),
       )
       .toBeGreaterThan(200);
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -45,7 +48,10 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
     await page.getByRole('button', { name: 'Start recording', exact: true }).click();
     await expect
       .poll(async () =>
-        page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0),
+        page.evaluate(async () => {
+          const next = await window.mira!.studio.state();
+          return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+        }),
       )
       .toBeGreaterThan(200);
     await page.getByRole('button', { name: 'Finish recording', exact: true }).click();
@@ -83,7 +89,10 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
       await page.getByRole('button', { name: 'Start recording', exact: true }).click();
       await expect
         .poll(async () =>
-          page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0),
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
         )
         .toBeGreaterThan(200);
       const lateState = await page.evaluate(async () =>
@@ -92,7 +101,10 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
       expect(lateState).toBe('ended');
       await expect
         .poll(async () =>
-          page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0),
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
         )
         .toBeGreaterThan(400);
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -106,7 +118,10 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
         .toBe('recording');
       await expect
         .poll(async () =>
-          page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0),
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
         )
         .toBeGreaterThan(200);
       await overlay.getByRole('button', { name: 'Dismiss overlay' }).click();
@@ -128,7 +143,12 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
       });
       await page.getByRole('button', { name: 'Start recording', exact: true }).click();
       await expect
-        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .poll(() =>
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
+        )
         .toBeGreaterThan(200);
       await page.evaluate(() =>
         (window as unknown as { syntheticCapture: MediaStream }).syntheticCapture
@@ -148,7 +168,12 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
         .toBe('ended');
       await page.getByRole('button', { name: 'Start recording', exact: true }).click();
       await expect
-        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .poll(() =>
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
+        )
         .toBeGreaterThan(200);
       await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()
@@ -209,7 +234,12 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
     await test.step('simulated suspend and destruction of the owning overlay cancel sessions', async () => {
       await page.getByRole('button', { name: 'Start recording', exact: true }).click();
       await expect
-        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .poll(() =>
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
+        )
         .toBeGreaterThan(200);
       await app.evaluate(({ powerMonitor }) => {
         powerMonitor.emit('suspend');
@@ -229,7 +259,12 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
         .toBe('ended');
       await page.getByRole('button', { name: 'Open compact recorder' }).click();
       await expect
-        .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).recordingMs ?? 0))
+        .poll(() =>
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
+        )
         .toBeGreaterThan(200);
       await app.evaluate(({ BrowserWindow }) => {
         BrowserWindow.getAllWindows()
@@ -239,6 +274,42 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
       await expect
         .poll(() => page.evaluate(async () => (await window.mira!.studio.state()).phase))
         .toBe('idle');
+    });
+    await test.step('a simulated AudioWorklet processor failure stops its tracks', async () => {
+      await page.evaluate(() => {
+        const Original = window.AudioWorkletNode;
+        window.AudioWorkletNode = class extends Original {
+          constructor(context: BaseAudioContext, name: string, options?: AudioWorkletNodeOptions) {
+            super(context, name, options);
+            Object.assign(window, { syntheticWorklet: this });
+          }
+        };
+      });
+      await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+      await expect
+        .poll(() =>
+          page.evaluate(async () => {
+            const next = await window.mira!.studio.state();
+            return next.phase === 'recording' ? (next.recordingMs ?? 0) : 0;
+          }),
+        )
+        .toBeGreaterThan(200);
+      await page.evaluate(() =>
+        (
+          window as unknown as { syntheticWorklet: AudioWorkletNode }
+        ).syntheticWorklet.dispatchEvent(new Event('processorerror')),
+      );
+      await expect(page.getByRole('alert')).toContainText('Audio processing stopped');
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              (
+                window as unknown as { syntheticCapture: MediaStream }
+              ).syntheticCapture.getTracks()[0].readyState,
+          ),
+        )
+        .toBe('ended');
     });
   } finally {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -255,6 +326,6 @@ test('AudioWorklet captures fake microphone audio and cancellation permits anoth
     } finally {
       if (timer) clearTimeout(timer);
     }
-    await rm(profile, { recursive: true, force: true });
+    await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

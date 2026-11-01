@@ -15,6 +15,7 @@ import { toggleOverlay, destroyOverlay } from './overlay-window';
 import { handle, isTrustedUrl, secureWindow, windowUrl } from './security';
 import { SpeechScratch } from './speech-scratch';
 import { cancelStudioOwner, cancelAllStudio } from './studio';
+import { cleanupModelDownloads } from './stt';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -86,6 +87,9 @@ if (!app.requestSingleInstanceLock()) {
     if (initialized) showMainWindow();
   });
   void app.whenReady().then(async () => {
+    await cleanupModelDownloads().catch(() =>
+      console.warn('Model download cleanup unavailable; storage will be checked before download.'),
+    );
     await new SpeechScratch(app.getPath('userData')).cleanup().catch(() => {
       console.warn(
         'Speech scratch cleanup unavailable; recording storage will be checked before use.',

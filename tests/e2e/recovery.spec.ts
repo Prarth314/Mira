@@ -68,6 +68,6 @@ test('real app restarts preserve migrated settings and explicitly recover a futu
     expect(await fs.readFile(path.join(profile, backups[0]), 'utf8')).toBe(future);
   } finally {
     if (app) await app.close();
-    await fs.rm(profile, { recursive: true, force: true });
+    await fs.rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

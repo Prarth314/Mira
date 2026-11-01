@@ -167,8 +167,9 @@ export function useStudio() {
         const track = stream.getAudioTracks()[0];
         const ended = () => failCapture('Microphone disconnected. Reconnect it and try again.');
         track?.addEventListener('ended', ended, { once: true });
-        node.onprocessorerror = () =>
+        const processorFailed = () =>
           failCapture('Audio processing stopped. Please start a new recording.');
+        node.addEventListener('processorerror', processorFailed);
         node.port.onmessage = (event: MessageEvent<ArrayBuffer | 'flushed'>) => {
           if (event.data === 'flushed') {
             acceptingAudio = false;
@@ -201,6 +202,7 @@ export function useStudio() {
         node.connect(context.destination);
         capture.current.dispose = () => {
           track?.removeEventListener('ended', ended);
+          node.removeEventListener('processorerror', processorFailed);
           source.disconnect();
           meter.disconnect();
         };

@@ -37,6 +37,16 @@ afterEach(async () => {
 });
 
 describe('actual STT storage and model lifecycle with synthetic transport', () => {
+  it('cleans only owned abandoned download files after abrupt exit', async () => {
+    const stt = await import('../../src/main/stt');
+    const directory = path.join(state.directory, 'models');
+    await fs.mkdir(directory);
+    const owned = `${state.model.name}.12345678-1234-1234-1234-123456789abc.partial`;
+    await fs.writeFile(path.join(directory, owned), 'partial');
+    await fs.writeFile(path.join(directory, 'keep.partial'), 'unrelated');
+    await stt.cleanupModelDownloads();
+    expect(await fs.readdir(directory)).toEqual(['keep.partial']);
+  });
   it('repairs a model deleted after a prior successful download', async () => {
     const stt = await import('../../src/main/stt');
     const model = await stt.downloadModel();

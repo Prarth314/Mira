@@ -22,6 +22,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Record verification environment
+        run: node -e "console.log(JSON.stringify({platform:process.platform,architecture:process.arch,node:process.version}))"
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
