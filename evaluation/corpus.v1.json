@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Authored deterministic fixtures and explicitly unmeasured audio cases; not a gold speech dataset.",
   "cases": [
     {
@@ -210,7 +210,9 @@
           ]
         }
       ],
-      "expectedSuggestions": []
+      "expectedSuggestions": [],
+      "proposedRefinement": "Keep version 2.4.1 without changing 8080.",
+      "expectedFallback": true
     },
     {
       "id": "text-deletion-example",
@@ -247,6 +249,53 @@
       },
       "observedTranscript": "",
       "expectedTokens": [],
+      "constraints": [],
+      "expectedSuggestions": []
+    },
+    {
+      "id": "unchanged-constraint",
+      "split": "held-out",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Keep sessionTTL unchanged.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Keep sessionTTL unchanged.",
+      "proposedRefinement": "Change sessionTTL.",
+      "expectedTokens": [
+        "sessionTTL"
+      ],
+      "expectedFallback": true,
+      "constraints": [],
+      "expectedSuggestions": []
+    },
+    {
+      "id": "full-version-constraint",
+      "split": "held-out",
+      "source": {
+        "kind": "synthetic-text",
+        "reference": "Authored regression fixture; no recording or model output",
+        "permission": "Mira MIT repository fixture",
+        "license": "MIT"
+      },
+      "referenceTranscript": {
+        "text": "Use version 2.4.1 and port 8080.",
+        "reviewStatus": "synthetic-authored-not-independent-human-review",
+        "reviewedBy": null
+      },
+      "observedTranscript": "Use version 2.4.1 and port 8080.",
+      "proposedRefinement": "Use version 2.4.2 and port 8080.",
+      "expectedTokens": [
+        "2.4.1",
+        "8080"
+      ],
+      "expectedFallback": true,
       "constraints": [],
       "expectedSuggestions": []
     },

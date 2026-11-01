@@ -25,16 +25,21 @@ beforeEach(() => {
 });
 afterEach(() => Object.defineProperty(process, 'platform', descriptor));
 describe('actual delivery adapter policy with mocked OS transport', () => {
-  it.each(['line\nbreak', 'tab\there', 'escape\x1b', 'delete\x7f'])(
-    'blocks terminal control characters before native or clipboard access',
-    async (prompt) => {
-      await expect(
-        routeDevPrompt(prompt, { destination: { ...target, name: 'powershell' } }),
-      ).rejects.toThrow('Multiline');
-      expect(mock.clipboard).not.toHaveBeenCalled();
-      expect(mock.powershell).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    'line\nbreak',
+    'tab\there',
+    'escape\x1b',
+    'delete\x7f',
+    'next\u0085line',
+    'line\u2028separator',
+    'paragraph\u2029separator',
+  ])('blocks terminal control characters before native or clipboard access', async (prompt) => {
+    await expect(
+      routeDevPrompt(prompt, { destination: { ...target, name: 'powershell' } }),
+    ).rejects.toThrow('Multiline');
+    expect(mock.clipboard).not.toHaveBeenCalled();
+    expect(mock.powershell).not.toHaveBeenCalled();
+  });
   it('keeps prompt text out of native scripts, pastes without Enter, and never restores clipboard', async () => {
     const prompt = 'Synthetic $(do-not-execute) `literal` instruction';
     expect(await routeDevPrompt(prompt, { destination: target })).toMatchObject({

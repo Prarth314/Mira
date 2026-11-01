@@ -32,7 +32,8 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
   );
   delete env.ELECTRON_RUN_AS_NODE;
   const app = await electron.launch({
-    args: ['.', `--user-data-dir=${profile}`],
+    executablePath: process.env.MIRA_TEST_EXECUTABLE,
+    args: [...(process.env.MIRA_TEST_EXECUTABLE ? [] : ['.']), `--user-data-dir=${profile}`],
     env: { ...env, NODE_ENV: 'production' },
   });
   try {

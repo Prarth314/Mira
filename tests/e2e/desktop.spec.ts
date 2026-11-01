@@ -57,6 +57,10 @@ test('production build opens with an isolated preload and settings bridge', asyn
     expect(bridge.keys).toEqual({ anthropic: false, openai: false });
     expect(bridge.settings?.defaultProvider).toBe('anthropic');
     expect(bridge.node).toBe('undefined');
+    if (process.env.MIRA_TEST_EXECUTABLE)
+      expect((await page.evaluate(async () => window.mira!.model.status())).runtimeAvailable).toBe(
+        true,
+      );
     expect(
       await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content'),
     ).not.toContain('ws://');

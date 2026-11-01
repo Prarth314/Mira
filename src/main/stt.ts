@@ -8,6 +8,8 @@ import { writeInt16PcmAsWav } from './wav';
 import { MODEL } from './model-info';
 import { SpeechScratch } from './speech-scratch';
 import { runSpeechProcess } from './speech-process';
+import { availableParallelism } from 'node:os';
+import { speechRuntimeOptions } from './speech-policy';
 
 let cachedBinary: string | null = null;
 let modelReady: Promise<string> | null = null;
@@ -184,7 +186,19 @@ export async function transcribePcm(pcm: Buffer, signal?: AbortSignal): Promise<
     await writeInt16PcmAsWav(pcm, wav);
     await runSpeechProcess(
       binary,
-      ['-m', modelPath(), '-f', wav, '-otxt', '-of', output, '-nt', '-l', 'en', '-t', '4'],
+      [
+        '-m',
+        modelPath(),
+        '-f',
+        wav,
+        '-otxt',
+        '-of',
+        output,
+        '-nt',
+        '-l',
+        'en',
+        ...speechRuntimeOptions(process.platform, availableParallelism()),
+      ],
       { signal },
     );
     signal?.throwIfAborted();

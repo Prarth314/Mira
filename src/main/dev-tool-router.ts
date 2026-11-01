@@ -54,7 +54,10 @@ export async function routeDevPrompt(
   // A terminal paste can interpret embedded newlines as command submission.
   if (
     ['terminal', 'iterm', 'warp'].includes(target) &&
-    [...prompt].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
+    [...prompt].some((char) => {
+      const code = char.charCodeAt(0);
+      return code < 32 || (code >= 127 && code <= 159) || code === 0x2028 || code === 0x2029;
+    })
   ) {
     throw new MiraError(
       'action_invalid',

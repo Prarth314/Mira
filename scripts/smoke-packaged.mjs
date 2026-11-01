@@ -6,8 +6,21 @@ const executable =
   (process.platform === 'win32'
     ? 'release/win-unpacked/Mira.exe'
     : `release/${process.arch === 'arm64' ? 'mac-arm64' : 'mac'}/Mira.app/Contents/MacOS/Mira`);
-const result = spawnSync(process.execPath, ['node_modules/@playwright/test/cli.js', 'test'], {
-  stdio: 'inherit',
-  env: { ...process.env, MIRA_TEST_EXECUTABLE: path.resolve(executable) },
-});
+const speech = process.argv.includes('--speech');
+const result = spawnSync(
+  process.execPath,
+  [
+    'node_modules/@playwright/test/cli.js',
+    'test',
+    ...(speech ? ['--config', 'playwright.evaluation.config.ts', '--project', 'speech'] : []),
+  ],
+  {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      MIRA_TEST_EXECUTABLE: path.resolve(executable),
+      ...(speech ? { MIRA_SPEECH_TEST: '1' } : {}),
+    },
+  },
+);
 process.exit(result.status ?? 1);
