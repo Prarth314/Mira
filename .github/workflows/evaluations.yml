@@ -14,6 +14,10 @@ on:
         description: Attempt Windows paste into disposable fixture only
         type: boolean
         default: false
+      compareNative:
+        description: Compare native default vs CPU mode on macOS using public audio
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -36,6 +40,8 @@ jobs:
         run: Start-Service Audiosrv
       - run: npm run test:speech
         if: inputs.speech
+        env:
+          MIRA_SPEECH_COMPARE: ${{ inputs.compareNative && '1' || '0' }}
       - name: Preserve speech report before another Playwright suite
         if: inputs.speech
         run: node -e "const fs=require('node:fs');fs.mkdirSync('release/measurements',{recursive:true});fs.copyFileSync('test-results/speech-benchmark.json','release/measurements/speech-benchmark.json')"

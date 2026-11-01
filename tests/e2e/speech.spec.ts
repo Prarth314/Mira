@@ -3,11 +3,13 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { MODEL } from '../../src/main/model-info';
+import { runSpeechProcess } from '../../src/main/speech-process';
 
 test('bundled Whisper transcribes official sample through owned IPC', async () => {
   if (process.env.MIRA_SPEECH_TEST !== '1')
     throw new Error('Use npm run test:speech; this downloads the pinned model.');
-  test.setTimeout(180_000);
+  test.setTimeout(process.env.MIRA_SPEECH_COMPARE === '1' ? 600_000 : 180_000);
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'mira-speech-test-'));
   const sample = await fs.readFile(
     'vendor/whisper/whisper.cpp-306c88f4d1286aec1bf96e544632897886af5501/samples/jfk.wav',
@@ -58,6 +60,47 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
     expect(state.draft?.delivery).toBe('prepared');
     expect(state.phase).toBe('idle');
     const environment = await page.evaluate(async () => window.mira!.diagnostics.get());
+    let nativeModeComparison: {
+      boundary: string;
+      defaultMs: number[];
+      cpuOnlyMs: number[];
+    } | null = null;
+    if (process.platform === 'darwin' && process.env.MIRA_SPEECH_COMPARE === '1') {
+      nativeModeComparison = {
+        boundary:
+          'Same public WAV/model and new CLI process each time; excludes IPC/model hash/WAV preparation. Interleaved trials after the initial app inference; not independent cold boots.',
+        defaultMs: [],
+        cpuOnlyMs: [],
+      };
+      for (let trial = 0; trial < 3; trial++)
+        for (const cpu of [false, true]) {
+          const output = path.join(profile, `native-${trial}-${cpu ? 'cpu' : 'default'}`);
+          const start = performance.now();
+          await runSpeechProcess(path.resolve('vendor/whisper/runtime/whisper-cli'), [
+            ...(cpu ? ['-ng'] : []),
+            '-m',
+            path.join(profile, 'models', MODEL.name),
+            '-f',
+            path.resolve(
+              'vendor/whisper/whisper.cpp-306c88f4d1286aec1bf96e544632897886af5501/samples/jfk.wav',
+            ),
+            '-otxt',
+            '-of',
+            output,
+            '-nt',
+            '-l',
+            'en',
+            '-t',
+            '4',
+          ]);
+          (cpu ? nativeModeComparison.cpuOnlyMs : nativeModeComparison.defaultMs).push(
+            performance.now() - start,
+          );
+          expect((await fs.readFile(`${output}.txt`, 'utf8')).toLowerCase()).toContain(
+            'ask not what your country',
+          );
+        }
+    }
     await fs.mkdir('test-results', { recursive: true });
     await fs.writeFile(
       'test-results/speech-benchmark.json',
@@ -75,6 +118,7 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
           transcriptionRealTimeFactor: transcriptionMs / (pcm!.length / 32),
           result: 'Expected public-sample phrase recognized; draft remained unsubmitted',
           environment,
+          nativeModeComparison,
         },
         null,
         2,
