@@ -12,16 +12,16 @@ export async function nativeMemorySampler(parentPid, stopFile) {
     throw new Error('Invalid owned application PID');
   const script = `$miraParentId = ${parentPid}
 $miraStop = '${stopFile.replaceAll("'", "''")}'
-$miraPeak = 0; $miraSamples = 0
+$miraPeak = 0; $miraSamples = 0; $miraQueryErrors = 0
 Write-Output 'READY'
 while (-not (Test-Path -LiteralPath $miraStop)) {
-  Get-CimInstance Win32_Process -Filter "ParentProcessId = $miraParentId AND Name = 'whisper-cli.exe'" -ErrorAction SilentlyContinue | ForEach-Object {
+  try { Get-CimInstance Win32_Process -Filter "ParentProcessId = $miraParentId AND Name = 'whisper-cli.exe'" -ErrorAction Stop | ForEach-Object {
     $miraChildInfo = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue
     if ($miraChildInfo) { $miraPeak = [Math]::Max($miraPeak, $miraChildInfo.PeakWorkingSet64 / 1MB); $miraSamples++ }
-  }
+  } } catch { $miraQueryErrors++ }
   Start-Sleep -Milliseconds 250
 }
-@{peakWorkingSetMiB=$miraPeak;samples=$miraSamples} | ConvertTo-Json -Compress`;
+@{peakWorkingSetMiB=$miraPeak;samples=$miraSamples;queryErrors=$miraQueryErrors} | ConvertTo-Json -Compress`;
   const child = spawn(
     'powershell.exe',
     [
@@ -76,6 +76,7 @@ while (-not (Test-Path -LiteralPath $miraStop)) {
           status: parsed.samples ? 'observed-owned-whisper-child' : 'not-observed',
           peakWorkingSetMiB: parsed.samples ? parsed.peakWorkingSetMiB : null,
           samples: parsed.samples,
+          queryErrors: parsed.queryErrors,
           samplingIntervalMs: 250,
         };
       } catch {

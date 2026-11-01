@@ -2,7 +2,8 @@ import { test, expect, _electron as electron } from '@playwright/test';
 import { build } from 'esbuild';
 import type { Destination } from '../../src/types/studio';
 import type { RouteResult } from '../../src/main/dev-tool-router';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -99,13 +100,35 @@ test('Windows native adapter pastes only into an owned disposable fixture', asyn
             destination: value.destination,
           });
           return false;
-        } catch {
-          return true;
+        } catch (error) {
+          return error instanceof Error ? error.message : 'unknown';
         }
       },
       { destination },
     );
-    expect(rejected).toBe(true);
+    expect(rejected).toContain('destination window closed');
+    await mkdir('test-results', { recursive: true });
+    await writeFile(
+      'test-results/native-delivery.json',
+      JSON.stringify(
+        {
+          schemaVersion: 1,
+          commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+          platform: process.platform,
+          architecture: process.arch,
+          osRelease: os.release(),
+          syntheticTextReceived: true,
+          closedTargetRejected: true,
+          autoSent: result.autoSent,
+          limitations: [
+            'Disposable Electron target with explicit fixture focus and synthetic app classification; not a real VS Code certification.',
+            'Controlled target receipt was inspected; production native paste remains attempted, not acknowledged.',
+          ],
+        },
+        null,
+        2,
+      ) + '\n',
+    );
   } finally {
     if (!targetClosed) await target.close();
     await source.close();

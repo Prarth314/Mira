@@ -2,6 +2,7 @@ import { test, expect, _electron as electron } from '@playwright/test';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 test('bundled Whisper transcribes official sample through owned IPC', async () => {
   if (process.env.MIRA_SPEECH_TEST !== '1')
@@ -64,6 +65,10 @@ test('bundled Whisper transcribes official sample through owned IPC', async () =
         {
           dataset: 'Upstream JFK public sample; one recording, not a general accuracy evaluation',
           sampleCount: 1,
+          commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+          wordErrorRate: null,
+          referenceStatus:
+            'No independently reviewed full reference transcript; phrase assertion only.',
           audioSeconds: pcm!.length / 32000,
           modelSetupMs: downloadMs,
           transcriptionMs,

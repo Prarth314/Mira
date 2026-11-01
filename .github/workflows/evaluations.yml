@@ -42,5 +42,6 @@ jobs:
           path: |
             test-results/speech-benchmark.json
             test-results/desktop-performance.json
+            test-results/native-delivery.json
           if-no-files-found: warn
           retention-days: 7

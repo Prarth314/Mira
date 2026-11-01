@@ -130,7 +130,10 @@ test('measure bounded desktop startup, cancellation, indexing and public-sample 
     }
     if (!pcm) throw new Error('Public PCM sample missing');
     const speech = [];
-    nativeSampler = await nativeMemorySampler(app.process().pid!, path.join(root, 'stop-sampler'));
+    nativeSampler = await nativeMemorySampler(
+      await app.evaluate(() => process.pid),
+      path.join(root, 'stop-sampler'),
+    );
     const responsivenessMs: number[] = [];
     let peakElectronMiB = 0;
     for (const seconds of [1, 5, pcm.length / 32000]) {
