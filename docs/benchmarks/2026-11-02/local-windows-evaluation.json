@@ -1,0 +1,397 @@
+{
+  "schemaVersion": 1,
+  "corpusVersion": "1.1.0",
+  "kind": "offline-synthetic-policy-evaluation",
+  "limitations": [
+    "No audio inference, provider calls, API credits, real recordings, or independent human semantic grading.",
+    "Text-pair WER measures authored fixture strings, not ASR accuracy. Held-out is a declared regression split, not proof against tuning leakage."
+  ],
+  "environment": {
+    "commit": "ca09efbbea38537eb188d2f26ff9146bb15f9302",
+    "worktreeDirty": false,
+    "platform": "win32",
+    "architecture": "x64",
+    "node": "v24.15.0",
+    "logicalProcessors": 16
+  },
+  "summary": {
+    "cases": 14,
+    "measured": 11,
+    "unmeasured": 3,
+    "candidateSetCorrect": 11,
+    "fallbackChecksCorrect": 11,
+    "abstentions": 8,
+    "fallbacks": 4,
+    "policyErrors": 0,
+    "speechErrorRate": null,
+    "liveProviderErrorRate": null
+  },
+  "results": [
+    {
+      "id": "technical-paths",
+      "split": "development",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 10,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 3,
+        "total": 3,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 3,
+        "total": 3,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "constraintIndicators": [
+        {
+          "id": "negation",
+          "markerRetained": true,
+          "semanticGrade": null
+        }
+      ],
+      "candidateSetCorrect": true,
+      "abstained": true,
+      "fallback": false,
+      "fallbackExpected": false,
+      "policyMs": 1.8201999999999998,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "lost-constraints",
+      "split": "development",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 6,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 2,
+        "total": 2,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 2,
+        "total": 2,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "constraintIndicators": [
+        {
+          "id": "negation",
+          "markerRetained": true,
+          "semanticGrade": null
+        }
+      ],
+      "candidateSetCorrect": true,
+      "abstained": true,
+      "fallback": true,
+      "fallbackExpected": true,
+      "policyMs": 0.1349999999999909,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "spelled-filename",
+      "split": "development",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 6,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "constraintIndicators": [],
+      "candidateSetCorrect": true,
+      "abstained": false,
+      "fallback": false,
+      "fallbackExpected": false,
+      "policyMs": 0.6756000000000029,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "ambiguous-file",
+      "split": "held-out",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 3,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "constraintIndicators": [],
+      "candidateSetCorrect": true,
+      "abstained": false,
+      "fallback": false,
+      "fallbackExpected": false,
+      "policyMs": 0.12510000000000332,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "spelled-symbol",
+      "split": "held-out",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 6,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "constraintIndicators": [],
+      "candidateSetCorrect": true,
+      "abstained": false,
+      "fallback": false,
+      "fallbackExpected": false,
+      "policyMs": 0.1407999999999845,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "no-match",
+      "split": "held-out",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 5,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "constraintIndicators": [],
+      "candidateSetCorrect": true,
+      "abstained": true,
+      "fallback": false,
+      "fallbackExpected": false,
+      "policyMs": 0.05510000000001014,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "flags-and-version",
+      "split": "held-out",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 11,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 3,
+        "total": 3,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 3,
+        "total": 3,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "constraintIndicators": [
+        {
+          "id": "without",
+          "markerRetained": true,
+          "semanticGrade": null
+        }
+      ],
+      "candidateSetCorrect": true,
+      "abstained": true,
+      "fallback": true,
+      "fallbackExpected": true,
+      "policyMs": 0.18600000000000705,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "text-deletion-example",
+      "split": "development",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 1,
+        "referenceWords": 4,
+        "rate": 0.25
+      },
+      "technicalBefore": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "constraintIndicators": [],
+      "candidateSetCorrect": true,
+      "abstained": true,
+      "fallback": false,
+      "fallbackExpected": false,
+      "policyMs": 0.03520000000000323,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "synthetic-empty-text",
+      "split": "held-out",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 0,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 0,
+        "total": 0,
+        "rate": null,
+        "missingCount": 0
+      },
+      "constraintIndicators": [],
+      "candidateSetCorrect": true,
+      "abstained": true,
+      "fallback": false,
+      "fallbackExpected": false,
+      "policyMs": 0.017200000000002547,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "unchanged-constraint",
+      "split": "held-out",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 3,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 1,
+        "total": 1,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 1,
+        "total": 1,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "constraintIndicators": [],
+      "candidateSetCorrect": true,
+      "abstained": true,
+      "fallback": true,
+      "fallbackExpected": true,
+      "policyMs": 0.09739999999999327,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "full-version-constraint",
+      "split": "held-out",
+      "status": "synthetic-policy-only",
+      "textPairWER": {
+        "edits": 0,
+        "referenceWords": 8,
+        "rate": 0
+      },
+      "technicalBefore": {
+        "retained": 2,
+        "total": 2,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "technicalAfter": {
+        "retained": 2,
+        "total": 2,
+        "rate": 1,
+        "missingCount": 0
+      },
+      "constraintIndicators": [],
+      "candidateSetCorrect": true,
+      "abstained": true,
+      "fallback": true,
+      "fallbackExpected": true,
+      "policyMs": 0.05690000000001305,
+      "providerMs": null,
+      "transcriptionMs": null
+    },
+    {
+      "id": "public-jfk",
+      "split": "development",
+      "status": "not-measured",
+      "reason": "Requires consent/license review and recorded observations; no audio or provider call was made."
+    },
+    {
+      "id": "noise-and-silence-audio",
+      "split": "held-out",
+      "status": "not-measured",
+      "reason": "Requires consent/license review and recorded observations; no audio or provider call was made."
+    },
+    {
+      "id": "interrupted-real-speech",
+      "split": "held-out",
+      "status": "not-measured",
+      "reason": "Requires consent/license review and recorded observations; no audio or provider call was made."
+    }
+  ]
+}

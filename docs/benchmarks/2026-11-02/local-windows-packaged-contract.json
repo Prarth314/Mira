@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "platform": "win32",
+  "architecture": "x64",
+  "packaged": true,
+  "keyboardPrepareAndCopy": true,
+  "cameraDenied": true,
+  "encryptedRoundtrip": true,
+  "secureStoreSave": true,
+  "liveProviderCalls": false
+}

@@ -22,6 +22,8 @@ The core loop is **record → transcribe → inspect → deliver**. You stay res
 
 For a quick engineering review, see the [capability/evidence matrix](docs/ENGINEERING_EVIDENCE.md), [measured desktop results](docs/BENCHMARKS.md), and [five-minute demo](docs/DEMO.md). These distinguish implemented behavior, automated evidence, and remaining real-world validation.
 
+The [November 2 validation run](docs/VALIDATION_2026-11-02.md) records checks and measurements after the window-teardown crash fix, including packaged-app results and remaining manual gates.
+
 > **Current status: unsigned internal beta, version 0.1.0.** Windows and macOS packaging and automated desktop checks are in place. Public signing, notarization, authenticated updates, broader native compatibility testing, and observed beta validation remain release gates. A successful CI run is evidence about the checks it ran, not a claim of universal production readiness.
 
 ## Why Mira exists

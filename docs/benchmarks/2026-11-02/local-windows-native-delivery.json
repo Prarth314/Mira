@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "commit": "ca09efbbea38537eb188d2f26ff9146bb15f9302",
+  "platform": "win32",
+  "architecture": "x64",
+  "osRelease": "10.0.26300",
+  "syntheticTextReceived": true,
+  "closedTargetRejected": true,
+  "autoSent": false,
+  "limitations": [
+    "Disposable Electron target with explicit fixture focus and synthetic app classification; not a real VS Code certification.",
+    "Controlled target receipt was inspected; production native paste remains attempted, not acknowledged."
+  ]
+}

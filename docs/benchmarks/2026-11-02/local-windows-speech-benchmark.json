@@ -1,0 +1,29 @@
+{
+  "dataset": "Upstream JFK public sample; one recording, not a general accuracy evaluation",
+  "sampleCount": 1,
+  "commit": "ca09efbbea38537eb188d2f26ff9146bb15f9302",
+  "wordErrorRate": null,
+  "referenceStatus": "No independently reviewed full reference transcript; phrase assertion only.",
+  "audioSeconds": 11,
+  "modelSetupMs": 92092,
+  "transcriptionMs": 2118,
+  "transcriptionRealTimeFactor": 0.19254545454545455,
+  "result": "Expected public-sample phrase recognized; draft remained unsubmitted",
+  "environment": {
+    "schemaVersion": 1,
+    "appVersion": "0.1.0",
+    "packaged": false,
+    "platform": "win32",
+    "architecture": "x64",
+    "osRelease": "10.0.26300",
+    "electron": "45.1.0",
+    "chromium": "156.0.8078.49",
+    "logicalProcessors": 16,
+    "totalMemoryGiB": 15,
+    "mainProcessMemoryMiB": 161,
+    "modelVerified": true,
+    "speechRuntimeAvailable": true,
+    "modelDownloadActive": false
+  },
+  "nativeModeComparison": null
+}

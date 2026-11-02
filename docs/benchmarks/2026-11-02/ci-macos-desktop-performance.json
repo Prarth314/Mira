@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-desktop-measurement",
+  "commit": "ca09efbbea38537eb188d2f26ff9146bb15f9302",
+  "worktreeDirty": false,
+  "environment": {
+    "schemaVersion": 1,
+    "appVersion": "0.1.0",
+    "packaged": false,
+    "platform": "darwin",
+    "architecture": "arm64",
+    "osRelease": "25.6.0",
+    "electron": "45.1.0",
+    "chromium": "156.0.8078.49",
+    "logicalProcessors": 3,
+    "totalMemoryGiB": 7,
+    "mainProcessMemoryMiB": 238,
+    "modelVerified": true,
+    "speechRuntimeAvailable": true,
+    "modelDownloadActive": false,
+    "cpuModel": "Apple M1 (Virtual)",
+    "model": {
+      "name": "ggml-base.en.bin",
+      "sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "sizeBytes": 147964211
+    },
+    "runtime": "Pinned whisper.cpp v1.9.2 CPU runtime; each transcription starts a new process",
+    "runtimeManifest": {
+      "version": "1.9.2",
+      "commit": "306c88f4d1286aec1bf96e544632897886af5501",
+      "platform": "darwin",
+      "arch": "arm64",
+      "files": {
+        "LICENSE-whisper.txt": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+        "whisper-cli": "b265086d96cc4250b99d5216f2a9359fd2c9fc6792646ecfe3457353b93f029b"
+      }
+    }
+  },
+  "startupMs": {
+    "count": 5,
+    "min": 1513.9925829999993,
+    "median": 1894.6755839999996,
+    "p95": null,
+    "max": 2028.23625
+  },
+  "startupSamplesMs": [
+    1914.7002499999999,
+    1894.6755839999996,
+    1513.9925829999993,
+    2028.23625,
+    1554.5237909999996
+  ],
+  "idle": {
+    "samples": 5,
+    "electronCpuPercent": {
+      "count": 5,
+      "min": 0,
+      "median": 3.4620276837812636,
+      "p95": null,
+      "max": 12.298462604357095
+    },
+    "electronWorkingSetMiB": {
+      "count": 5,
+      "min": 476.78125,
+      "median": 529.828125,
+      "p95": null,
+      "max": 530.609375
+    }
+  },
+  "cancellationMs": {
+    "count": 5,
+    "min": 77.12604199999987,
+    "median": 103.26583400000163,
+    "p95": null,
+    "max": 481.5716250000005
+  },
+  "indexes": [
+    {
+      "eligibleFiles": 100,
+      "ms": {
+        "count": 3,
+        "min": 4.774333999997907,
+        "median": 9.016374999999243,
+        "p95": null,
+        "max": 12.687041999997746
+      }
+    },
+    {
+      "eligibleFiles": 1000,
+      "ms": {
+        "count": 3,
+        "min": 12.833582999999635,
+        "median": 17.029583999999886,
+        "p95": null,
+        "max": 18.328125
+      }
+    },
+    {
+      "eligibleFiles": 5000,
+      "ms": {
+        "count": 3,
+        "min": 31.443458000001556,
+        "median": 58.11029200000121,
+        "p95": null,
+        "max": 91.34908300000097
+      }
+    }
+  ],
+  "modelSetupMs": 3411.412874999998,
+  "speech": [
+    {
+      "audioSeconds": 1,
+      "ms": {
+        "count": 3,
+        "min": 1614.2796249999956,
+        "median": 2325.705915999999,
+        "p95": null,
+        "max": 2349.9744999999966
+      },
+      "samplesMs": [
+        2325.705915999999,
+        2349.9744999999966,
+        1614.2796249999956
+      ],
+      "errors": 0
+    },
+    {
+      "audioSeconds": 5,
+      "ms": {
+        "count": 3,
+        "min": 2059.2251250000045,
+        "median": 2247.5590840000004,
+        "p95": null,
+        "max": 2767.3822079999954
+      },
+      "samplesMs": [
+        2767.3822079999954,
+        2247.5590840000004,
+        2059.2251250000045
+      ],
+      "errors": 0
+    },
+    {
+      "audioSeconds": 11,
+      "ms": {
+        "count": 3,
+        "min": 2292.331124999997,
+        "median": 2512.4366669999945,
+        "p95": null,
+        "max": 4301.727291999996
+      },
+      "samplesMs": [
+        4301.727291999996,
+        2512.4366669999945,
+        2292.331124999997
+      ],
+      "errors": 0
+    }
+  ],
+  "ipcAndAnimationFrameMs": {
+    "count": 180,
+    "min": 2.658292000000074,
+    "median": 6.7016454999975394,
+    "p95": 37.545500000000175,
+    "max": 265.71208299999853
+  },
+  "sampledPeakElectronWorkingSetMiB": 749.09375,
+  "nativeWhisperMemory": {
+    "status": "unsupported-platform",
+    "peakWorkingSetMiB": null,
+    "samples": 0
+  },
+  "limitations": [
+    "Synthetic microphone cancellation; public upstream sample clips for speech. No real microphone or private recording.",
+    "Startup includes process launch to enabled typed input and responding IPC; fresh profiles, warm filesystem possible.",
+    "Speech wall time includes IPC, model verification, new process model loading, transcription, cleanup, and up to one 100 ms sampler interval.",
+    "First speech request versus later requests reflects OS cache; load and inference are not separately instrumented.",
+    "Electron memory is sampled separately from the owned native Whisper child. Windows native peak uses OS PeakWorkingSet64 observed while the child runs; short processes can be missed. Battery is unmeasured.",
+    "A separate read-only Windows CIM sampler polls owned Whisper child PIDs every 250 ms; measurement overhead is included.",
+    "Small sample groups show min/median/max; p95 is null below 20 observations. No consumer-device guarantee."
+  ]
+}

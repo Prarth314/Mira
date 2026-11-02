@@ -1,0 +1,12 @@
+{
+  "version": "0.1.0",
+  "platform": "win32",
+  "architecture": "x64",
+  "sourceCommit": null,
+  "unsigned": true,
+  "artifact": {
+    "name": "Mira Setup 0.1.0.exe",
+    "sha256": "cc6905558e0d3135d9d8cb2d670148a67d2dd3d1877766febcaac1423a7b667f",
+    "bytes": 128826431
+  }
+}
